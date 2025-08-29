@@ -1,34 +1,29 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, StaticPool
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+import logging
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 # Create async engine
-# For Supabase transaction pooler, we need special settings
-if "pooler.supabase.com:6543" in settings.DATABASE_URL:
-    # Transaction pooler mode - disable prepared statements completely
-    # Add prepared_statement_cache_size=0 to the URL
-    db_url = settings.DATABASE_URL
-    if "?" in db_url:
-        db_url += "&prepared_statement_cache_size=0"
-    else:
-        db_url += "?prepared_statement_cache_size=0"
+# Check if we're using Supabase pooler
+if "pooler.supabase.com" in settings.DATABASE_URL:
+    # Use session pooler on port 5432 instead of transaction pooler
+    # Session pooler handles prepared statements better
+    db_url = settings.DATABASE_URL.replace(":6543", ":5432")
+    logger.info("Switched from Supabase transaction pooler to session pooler")
     
     engine = create_async_engine(
         db_url,
         echo=settings.DEBUG,
-        poolclass=NullPool,  # Use NullPool for transaction pooler
-        connect_args={
-            "server_settings": {
-                "jit": "off",
-                "application_name": "growthcopilot"
-            },
-            "command_timeout": 60,
-            "prepared_statement_cache_size": 0,
-        }
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=300,  # Recycle connections every 5 minutes
     )
 else:
     # Direct connection or other database
