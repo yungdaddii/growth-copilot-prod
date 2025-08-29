@@ -10,8 +10,15 @@ from app.config import settings
 # For Supabase transaction pooler, we need special settings
 if "pooler.supabase.com:6543" in settings.DATABASE_URL:
     # Transaction pooler mode - disable prepared statements completely
+    # Add prepared_statement_cache_size=0 to the URL
+    db_url = settings.DATABASE_URL
+    if "?" in db_url:
+        db_url += "&prepared_statement_cache_size=0"
+    else:
+        db_url += "?prepared_statement_cache_size=0"
+    
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        db_url,
         echo=settings.DEBUG,
         poolclass=NullPool,  # Use NullPool for transaction pooler
         connect_args={
@@ -20,6 +27,7 @@ if "pooler.supabase.com:6543" in settings.DATABASE_URL:
                 "application_name": "growthcopilot"
             },
             "command_timeout": 60,
+            "prepared_statement_cache_size": 0,
         }
     )
 else:
