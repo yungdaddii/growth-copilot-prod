@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin: 10px 0; }
+        .message { margin: 5px 0; padding: 5px; }
+        .sent { background: #e3f2fd; }
+        .received { background: #f5f5f5; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="sendTest()">Send Test Message</button>
+    <button onclick="sendAnalysis()">Send Analysis Request</button>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Enter message" style="width: 300px;">
+    <button onclick="sendCustom()">Send Custom</button>
+
+    <script>
+        let ws = null;
+        let messageDiv = document.getElementById('messages');
+
+        function log(message, className = '') {
+            const div = document.createElement('div');
+            div.className = 'message ' + className;
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            messageDiv.appendChild(div);
+            messageDiv.scrollTop = messageDiv.scrollHeight;
+        }
+
+        function connect() {
+            if (ws) {
+                log('Already connected', 'error');
+                return;
+            }
+
+            log('Connecting to WebSocket...', 'success');
+            ws = new WebSocket('ws://localhost:8000/ws/chat');
+
+            ws.onopen = function(event) {
+                log('WebSocket connected!', 'success');
+            };
+
+            ws.onmessage = function(event) {
+                log('Received: ' + event.data, 'received');
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Parsed message:', data);
+                } catch(e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+
+            ws.onerror = function(error) {
+                log('WebSocket error: ' + error, 'error');
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function(event) {
+                log('WebSocket disconnected. Code: ' + event.code + ', Reason: ' + event.reason, 'error');
+                ws = null;
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('Disconnected', 'success');
+            } else {
+                log('Not connected', 'error');
+            }
+        }
+
+        function sendTest() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'chat',
+                payload: {
+                    content: 'Hello from test client!'
+                }
+            };
+            
+            ws.send(JSON.stringify(message));
+            log('Sent: ' + JSON.stringify(message), 'sent');
+        }
+
+        function sendAnalysis() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'chat',
+                payload: {
+                    content: 'analyze stripe.com'
+                }
+            };
+            
+            ws.send(JSON.stringify(message));
+            log('Sent: ' + JSON.stringify(message), 'sent');
+        }
+
+        function sendCustom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+
+            const input = document.getElementById('messageInput');
+            const message = {
+                type: 'chat',
+                payload: {
+                    content: input.value
+                }
+            };
+            
+            ws.send(JSON.stringify(message));
+            log('Sent: ' + JSON.stringify(message), 'sent');
+            input.value = '';
+        }
+
+        // Auto-connect on load
+        window.onload = function() {
+            setTimeout(connect, 500);
+        };
+    </script>
+</body>
+</html>
