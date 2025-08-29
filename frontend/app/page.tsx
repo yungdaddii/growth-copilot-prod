@@ -221,7 +221,7 @@ export default function Home() {
               G
             </div>
             <div>
-              <div style={{ color: 'white', fontSize: '14px' }}>Growth Co-pilot</div>
+              <div style={{ color: 'white', fontSize: '14px' }}>Keelo.ai</div>
               <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Free</div>
             </div>
           </div>
@@ -243,7 +243,7 @@ export default function Home() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>Growth Co-pilot</div>
+          <div style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>Keelo.ai</div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button 
               onClick={() => setPromptLibraryOpen(true)}
@@ -541,7 +541,7 @@ export default function Home() {
                       fontWeight: '600',
                       marginBottom: '8px'
                     }}>
-                      {msg.role === 'user' ? 'You' : 'Growth Co-pilot'}
+                      {msg.role === 'user' ? 'You' : 'Keelo.ai'}
                     </div>
                     <div style={{ 
                       color: 'rgba(255,255,255,0.8)', 
@@ -688,7 +688,7 @@ export default function Home() {
             color: 'rgba(255,255,255,0.5)',
             marginTop: '8px'
           }}>
-            Growth Co-pilot can analyze websites and provide insights that may be inaccurate.
+            Keelo.ai can analyze websites and provide insights that may be inaccurate.
           </p>
         </div>
       </div>

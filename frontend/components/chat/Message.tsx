@@ -65,7 +65,7 @@ export function Message({ role, content, metadata, timestamp }: MessageProps) {
             {/* Name and timestamp */}
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                {isUser ? 'You' : 'Growth Co-pilot'}
+                {isUser ? 'You' : 'Keelo.ai'}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {timestamp.toLocaleTimeString([], { 

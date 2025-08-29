@@ -36,7 +36,7 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting Growth Co-pilot", version=settings.APP_VERSION)
+    logger.info("Starting Keelo.ai", version=settings.APP_VERSION)
     
     # Initialize Redis
     await init_redis()
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("Shutting down Growth Co-pilot")
+    logger.info("Shutting down Keelo.ai")
     await engine.dispose()
 
 

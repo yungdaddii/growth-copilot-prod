@@ -6,14 +6,16 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Growth Co-pilot - AI that finds hidden revenue in 60 seconds',
-  description: 'Analyze any website and discover revenue opportunities with AI-powered insights',
-  keywords: 'growth marketing, website analysis, conversion optimization, AI analysis',
-  authors: [{ name: 'Growth Co-pilot' }],
+  title: 'Keelo.ai - AI Growth Engine',
+  description: 'AI-powered growth engine that analyzes websites and unlocks revenue opportunities in seconds',
+  keywords: 'AI growth engine, website analysis, revenue optimization, conversion intelligence, Keelo.ai',
+  authors: [{ name: 'Keelo.ai' }],
   openGraph: {
-    title: 'Growth Co-pilot - Find Hidden Revenue',
-    description: 'AI that analyzes websites and finds revenue opportunities in 60 seconds',
+    title: 'Keelo.ai - AI Growth Engine',
+    description: 'AI-powered growth engine that analyzes websites and unlocks revenue opportunities',
     type: 'website',
+    url: 'https://keelo.ai',
+    siteName: 'Keelo.ai',
   },
 }
 
