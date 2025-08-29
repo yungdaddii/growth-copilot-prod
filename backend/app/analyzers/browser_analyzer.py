@@ -5,9 +5,18 @@ This provides ACTUAL validation, not guesses
 
 import asyncio
 from typing import Dict, Any, List, Optional
-from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
 import structlog
 from urllib.parse import urlparse, urljoin
+
+# Make Playwright optional for Railway deployment
+try:
+    from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    Browser = None
+    Page = None
+    PlaywrightTimeout = TimeoutError
 
 logger = structlog.get_logger()
 
@@ -24,6 +33,9 @@ class BrowserAnalyzer:
         
     async def __aenter__(self):
         """Setup browser when entering context"""
+        if not PLAYWRIGHT_AVAILABLE:
+            logger.warning("Playwright not available - browser analysis disabled")
+            return self
         playwright = await async_playwright().start()
         self.browser = await playwright.chromium.launch(
             headless=True,
@@ -41,6 +53,18 @@ class BrowserAnalyzer:
         Perform comprehensive browser-based analysis.
         Only reports VERIFIED issues with REAL revenue impact.
         """
+        if not PLAYWRIGHT_AVAILABLE:
+            return {
+                "verified_issues": [],
+                "broken_flows": [],
+                "javascript_errors": [],
+                "form_problems": [],
+                "mobile_issues": [],
+                "performance_killers": [],
+                "total_monthly_impact": 0,
+                "error": "Browser analysis not available in production environment"
+            }
+        
         results = {
             "verified_issues": [],
             "broken_flows": [],

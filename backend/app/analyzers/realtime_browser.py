@@ -8,9 +8,18 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import structlog
-from playwright.async_api import async_playwright, Page, Browser, Error
 import json
 from bs4 import BeautifulSoup
+
+# Make Playwright optional for Railway deployment
+try:
+    from playwright.async_api import async_playwright, Page, Browser, Error
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    Page = None
+    Browser = None
+    Error = Exception
 
 from app.utils.cache import cache_result, get_cached_result
 
@@ -39,6 +48,20 @@ class RealtimeBrowserAnalyzer:
         Perform real-time browser-based analysis of website
         This sees what users actually see, not just static HTML
         """
+        if not PLAYWRIGHT_AVAILABLE:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "is_realtime": False,
+                "javascript_errors": [],
+                "dynamic_content": {},
+                "forms": [],
+                "load_metrics": {},
+                "interactions": [],
+                "console_logs": [],
+                "network_errors": [],
+                "error": "Browser analysis not available in production environment"
+            }
+        
         # Use shorter cache for real-time analysis (1 hour)
         cache_key = f"realtime_browser:{domain}:{datetime.now().strftime('%Y%m%d%H')}"
         cached = await get_cached_result(cache_key)
