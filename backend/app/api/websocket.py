@@ -247,7 +247,13 @@ async def websocket_endpoint(
                             
                             # Track successful analysis
                             analysis_duration = time.time() - analysis_start_time
-                            issues_count = len(analysis_result.get("issues", [])) if analysis_result else 0
+                            # Handle both dict and object types
+                            if hasattr(analysis_result, 'issues'):
+                                issues_count = len(analysis_result.issues) if analysis_result.issues else 0
+                            elif isinstance(analysis_result, dict):
+                                issues_count = len(analysis_result.get("issues", [])) if analysis_result else 0
+                            else:
+                                issues_count = 0
                             
                             Analytics.track_analysis(
                                 domain=domain,
