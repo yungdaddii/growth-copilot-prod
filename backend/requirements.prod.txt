@@ -1,5 +1,5 @@
 # Core dependencies
-fastapi==0.104.1
+fastapi==0.115.0
 uvicorn[standard]==0.24.0
 websockets==12.0
 python-multipart==0.0.6
@@ -7,7 +7,7 @@ python-multipart==0.0.6
 # Database
 sqlalchemy==2.0.23
 asyncpg==0.29.0
-alembic==1.13.0
+alembic==1.13.2
 redis==5.0.1
 
 # Task queue
@@ -15,14 +15,14 @@ celery==5.3.4
 
 # API clients
 openai==1.6.1
-anthropic==0.8.0
+anthropic==0.34.2
 httpx==0.25.2
 aiohttp==3.9.1
 
 # Data processing
 pydantic==2.5.2
 python-dotenv==1.0.0
-beautifulsoup4==4.12.2
+beautifulsoup4==4.12.3
 lxml==4.9.3
 Pillow==10.1.0
 
