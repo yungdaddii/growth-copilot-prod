@@ -19,7 +19,7 @@ class AIProvider(ABC):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 500
+        max_tokens: int = 2000
     ) -> str:
         """Generate a completion from the AI model"""
         pass
@@ -46,7 +46,7 @@ class OpenAIProvider(AIProvider):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 500
+        max_tokens: int = 2000
     ) -> str:
         if not self.client:
             raise ValueError("OpenAI client not initialized - missing API key")
@@ -83,7 +83,7 @@ class ClaudeProvider(AIProvider):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 500
+        max_tokens: int = 2000
     ) -> str:
         if not self.client:
             raise ValueError("Claude client not initialized - missing API key")

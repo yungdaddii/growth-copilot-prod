@@ -455,7 +455,7 @@ Use ONLY the recommendations provided. Focus on specifics, not generic advice.
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.2,  # Low temperature for consistent, factual responses
-                max_tokens=400  # Allow for comprehensive response
+                max_tokens=2000  # Increased for comprehensive responses
             )
             
             content = response.choices[0].message.content
