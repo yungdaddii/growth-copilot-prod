@@ -13,7 +13,7 @@ from app.schemas.conversation import MessageCreate
 from app.models.conversation import Conversation, Message, MessageRole, MessageType
 from app.models.analysis import Analysis
 from app.core.analyzer import DomainAnalyzer
-from app.core.nlp import NLPProcessor
+from app.core.safe_enhanced_nlp import SafeEnhancedNLPProcessor
 from app.core.conversation_handler import ConversationHandler
 from app.core.ai_conversation import AIConversationEngine
 from app.utils.cache import get_redis
@@ -81,7 +81,7 @@ async def websocket_endpoint(
     
     # Initialize conversation and context-aware chat
     conversation = None
-    nlp = NLPProcessor()
+    nlp = SafeEnhancedNLPProcessor()
     context_chat = None  # Will initialize with DB session
     
     try:
