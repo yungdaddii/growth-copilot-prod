@@ -9,7 +9,17 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import websocket, analysis, share, test_ws, test_conversation
+
+# Import enhanced websocket if feature flag is enabled
+import os
+if os.getenv("ENABLE_ENHANCED_NLP", "false").lower() == "true":
+    from app.api import websocket_enhanced as websocket
+    print("🚀 ENHANCED NLP ENABLED - Using websocket_enhanced")
+else:
+    from app.api import websocket
+    print("📌 Standard NLP - Using regular websocket")
+
+from app.api import analysis, share, test_ws, test_conversation
 from app.utils.cache import init_redis
 
 # Configure structured logging
