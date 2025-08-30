@@ -19,7 +19,7 @@ class AIProvider(ABC):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 2000
+        max_tokens: Optional[int] = None
     ) -> str:
         """Generate a completion from the AI model"""
         pass
@@ -46,18 +46,24 @@ class OpenAIProvider(AIProvider):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 2000
+        max_tokens: Optional[int] = None
     ) -> str:
         if not self.client:
             raise ValueError("OpenAI client not initialized - missing API key")
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            # Build request parameters
+            params = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": temperature
+            }
+            
+            # Only add max_tokens if specified
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+            
+            response = await self.client.chat.completions.create(**params)
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"OpenAI completion failed: {str(e)}")
@@ -83,7 +89,7 @@ class ClaudeProvider(AIProvider):
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 2000
+        max_tokens: Optional[int] = None
     ) -> str:
         if not self.client:
             raise ValueError("Claude client not initialized - missing API key")
@@ -102,13 +108,18 @@ class ClaudeProvider(AIProvider):
                         "content": msg["content"]
                     })
             
-            response = await self.client.messages.create(
-                model=self.model,
-                system=system_message if system_message else "",
-                messages=claude_messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            # Build request parameters
+            params = {
+                "model": self.model,
+                "system": system_message if system_message else "",
+                "messages": claude_messages,
+                "temperature": temperature
+            }
+            
+            # Claude requires max_tokens, use a high default if not specified
+            params["max_tokens"] = max_tokens if max_tokens is not None else 4096
+            
+            response = await self.client.messages.create(**params)
             
             return response.content[0].text
         except Exception as e:

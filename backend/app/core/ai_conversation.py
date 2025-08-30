@@ -129,8 +129,8 @@ Would you like me to analyze any of these areas?"""
             # Generate response using the provider
             content = await self.provider.generate_completion(
                 messages=messages,
-                temperature=0.7,
-                max_tokens=500
+                temperature=0.7
+                # No max_tokens limit for complete responses
             )
             
             # Extract any specific data requests from the response

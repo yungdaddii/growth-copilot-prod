@@ -454,8 +454,8 @@ Use ONLY the recommendations provided. Focus on specifics, not generic advice.
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2,  # Low temperature for consistent, factual responses
-                max_tokens=2000  # Increased for comprehensive responses
+                temperature=0.2  # Low temperature for consistent, factual responses
+                # max_tokens removed - let model complete naturally
             )
             
             content = response.choices[0].message.content
@@ -684,8 +684,8 @@ Use ONLY the recommendations provided. Focus on specifics, not generic advice.
                     {"role": "system", "content": "You are a helpful website analysis assistant. Keep responses brief and factual."},
                     {"role": "user", "content": text}
                 ],
-                temperature=0.5,
-                max_tokens=200
+                temperature=0.5
+                # No max_tokens limit - let response complete naturally
             )
             
             return {
