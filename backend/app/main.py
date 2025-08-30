@@ -9,7 +9,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import websocket, analysis, share, test_ws, test_conversation
+from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced
 from app.utils.cache import init_redis
 
 # Configure structured logging
@@ -113,6 +113,7 @@ app.include_router(test_ws.router, prefix="/ws", tags=["test"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(share.router, prefix="/api/share", tags=["share"])
 app.include_router(test_conversation.router, prefix="/api/test", tags=["test"])
+app.include_router(test_enhanced.router, prefix="/api/test", tags=["test-enhanced"])
 
 
 @app.get("/")

@@ -7,7 +7,8 @@ import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 import structlog
-from redis import Redis
+from typing import Optional
+import redis
 
 from app.utils.cache import get_redis
 from app.models.analysis import Industry
@@ -18,9 +19,9 @@ logger = structlog.get_logger()
 class ConversationContext:
     """Manages conversation context and user preferences"""
     
-    def __init__(self, session_id: str, redis_client: Optional[Redis] = None):
+    def __init__(self, session_id: str, redis_client: Optional[redis.Redis] = None):
         self.session_id = session_id
-        self.redis = redis_client or get_redis()
+        self.redis = redis_client  # Don't auto-get redis for safety
         self.context_key = f"context:{session_id}"
         self.ttl = 3600 * 24  # 24 hours
         
