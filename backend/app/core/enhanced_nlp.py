@@ -158,8 +158,15 @@ Current conversation context:
         # Performance specifics
         if "performance" in results:
             perf = results["performance"]
-            specific["largest_images"] = perf.get("large_images", [])[:3]
-            specific["render_blocking_resources"] = perf.get("render_blocking", [])[:3]
+            # Check if large_images is a list before slicing
+            large_images = perf.get("large_images", [])
+            if isinstance(large_images, list):
+                specific["largest_images"] = large_images[:3]
+            
+            # Check if render_blocking is a list before slicing
+            render_blocking = perf.get("render_blocking", [])
+            if isinstance(render_blocking, list):
+                specific["render_blocking_resources"] = render_blocking[:3]
             
             # Specific performance numbers
             if "load_time" in perf:

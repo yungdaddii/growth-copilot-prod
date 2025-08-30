@@ -6,10 +6,12 @@ This allows testing without affecting production
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import structlog
+import uuid
 from typing import Optional
 from app.core.safe_enhanced_nlp import SafeEnhancedNLPProcessor
 from app.core.analyzer import DomainAnalyzer
 from app.database import get_db
+from app.models import Conversation
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -42,16 +44,20 @@ async def test_enhanced_nlp(request: TestRequest) -> TestResponse:
         
         # Run analysis
         async for db in get_db():
+            # Create a test conversation first
+            test_conversation = Conversation(
+                id=str(uuid.uuid4()),
+                share_slug=f"test-{uuid.uuid4().hex[:8]}"
+            )
+            db.add(test_conversation)
+            await db.commit()
+            
             analyzer = DomainAnalyzer(db)
             
-            # Simple progress callback
-            def progress(msg, pct):
-                logger.info(f"Analysis progress: {pct}% - {msg}")
-            
-            # Analyze domain
+            # Analyze domain with test conversation ID
             analysis = await analyzer.analyze(
-                domain=request.domain,
-                progress_callback=progress
+                conversation_id=test_conversation.id,
+                domain=request.domain
             )
             
             # Generate response
