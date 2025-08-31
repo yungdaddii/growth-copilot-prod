@@ -38,7 +38,7 @@ class GoogleAdsOAuthHandler:
         self.client_id = settings.GOOGLE_ADS_CLIENT_ID
         self.client_secret = settings.GOOGLE_ADS_CLIENT_SECRET
         self.redirect_uri = settings.GOOGLE_ADS_REDIRECT_URI or \
-                           f"{settings.BACKEND_URL}/api/integrations/google-ads/callback"
+                           f"{settings.BACKEND_URL}/api/integrations/google-ads/oauth/callback"
         
         if not self.client_id or not self.client_secret:
             logger.warning("Google Ads OAuth credentials not configured")
