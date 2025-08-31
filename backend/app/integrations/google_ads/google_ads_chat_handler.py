@@ -165,12 +165,12 @@ class GoogleAdsChatHandler:
             
             # Check if connection is required
             if response.get("metadata", {}).get("type") == "connection_required":
-                # Enhance response with connection prompt
-                response["content"] += (
-                    "\n\n**[🔗 Connect Google Ads now]** to unlock these insights."
-                )
                 # Generate auth URL
                 auth_data = await self.oauth_handler.generate_auth_url(session_id)
+                # Enhance response with clickable connection link
+                response["content"] += (
+                    f"\n\n**[🔗 Connect Google Ads now]({auth_data['auth_url']})** to unlock these insights."
+                )
                 response["metadata"]["auth_url"] = auth_data["auth_url"]
             
             # If we have a domain context, add cross-analysis
