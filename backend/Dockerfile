@@ -31,10 +31,18 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt .
+COPY requirements.txt requirements.prod.txt ./
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Use prod requirements for Railway deployment
+RUN if [ -f requirements.prod.txt ]; then \
+        pip install --no-cache-dir -r requirements.prod.txt; \
+    else \
+        pip install --no-cache-dir -r requirements.txt; \
+    fi
+
+# Explicitly ensure google-ads is installed
+RUN pip install --no-cache-dir google-ads==23.1.0
 
 # Install Playwright browsers (as root before switching users)
 RUN playwright install chromium
