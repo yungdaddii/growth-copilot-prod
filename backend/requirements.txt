@@ -27,6 +27,7 @@ google-ads==23.1.0  # Google Ads API
 google-auth==2.29.0
 google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
+google-analytics-data==0.18.0
 
 # Utils
 pydantic==2.8.2
@@ -59,10 +60,4 @@ black==24.8.0
 ruff==0.6.2
 mypy==1.11.1
 pre-commit==3.8.0
-
-# Google Analytics Integration
-google-auth==2.23.4
-google-auth-oauthlib==1.1.0
-google-auth-httplib2==0.1.1
-google-analytics-data==0.18.0
 cryptography==41.0.7
