@@ -70,6 +70,14 @@ async def oauth_callback(
         frontend_url = settings.FRONTEND_URL
         
         if result["success"]:
+            # Mark OAuth as complete in simple system
+            from .google_ads_simple_client import SimpleGoogleAdsClient
+            session_id = result.get("session_id")
+            if session_id:
+                client = SimpleGoogleAdsClient(session_id)
+                await client.mark_oauth_complete()
+                logger.info(f"Marked OAuth complete for session {session_id}")
+            
             # Redirect to frontend with success message
             return RedirectResponse(
                 url=f"{frontend_url}?google_ads_connected=true&message=Google+Ads+connected+successfully"
@@ -110,11 +118,13 @@ async def check_connection_status(session_id: str = Query(...)):
     #     )
     
     try:
-        oauth_handler = GoogleAdsOAuthHandler()
-        credentials = await oauth_handler.get_valid_credentials(session_id)
+        # Use simple client to check connection status
+        from .google_ads_simple_client import SimpleGoogleAdsClient
+        client = SimpleGoogleAdsClient(session_id)
+        connected = await client.has_credentials()
         
         return {
-            "connected": credentials is not None,
+            "connected": connected,
             "platform": "google_ads"
         }
         

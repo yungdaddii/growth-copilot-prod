@@ -9,7 +9,8 @@ from typing import Dict, List, Any, Optional
 import structlog
 from datetime import datetime
 
-from .google_ads_api_client import GoogleAdsAPIClient
+# Use simple client to bypass GRPC issues
+from .google_ads_simple_client import SimpleGoogleAdsClient
 
 logger = structlog.get_logger()
 
@@ -25,7 +26,8 @@ class GoogleAdsNLPResponder:
             session_id: User's session ID
         """
         self.session_id = session_id
-        self.api_client = GoogleAdsAPIClient(session_id)
+        # Use simple client instead of complex API client
+        self.api_client = SimpleGoogleAdsClient(session_id)
     
     async def respond_to_query(self, query: str) -> Dict[str, Any]:
         """
