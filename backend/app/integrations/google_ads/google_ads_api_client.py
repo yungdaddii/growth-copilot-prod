@@ -42,20 +42,32 @@ class GoogleAdsAPIClient:
             True if initialized successfully
         """
         try:
-            # Get valid credentials
-            credentials = await self.oauth_handler.get_valid_credentials(self.session_id)
-            if not credentials:
+            # Get credentials data from Redis (not the Credentials object)
+            from app.utils.cache import get_redis
+            redis = await get_redis()
+            if not redis:
+                logger.error("Redis not available for credentials")
+                return False
+            
+            redis_key = f"google_ads:credentials:{self.session_id}"
+            creds_json = await redis.get(redis_key)
+            if not creds_json:
                 logger.warning("No valid credentials for Google Ads", session_id=self.session_id)
                 return False
             
-            # Create Google Ads client configuration
+            import json
+            creds_data = json.loads(creds_json)
+            
+            # Create Google Ads client configuration with OAuth2 credentials
             config = {
                 "developer_token": settings.GOOGLE_ADS_DEVELOPER_TOKEN,
-                "use_proto_plus": True,
-                "credentials": credentials
+                "client_id": creds_data.get("client_id"),
+                "client_secret": creds_data.get("client_secret"),
+                "refresh_token": creds_data.get("refresh_token"),
+                "use_proto_plus": True
             }
             
-            # Initialize client
+            # Initialize client with OAuth2 credentials format
             self.client = GoogleAdsClient.load_from_dict(config)
             
             # Get customer ID (first accessible account)
