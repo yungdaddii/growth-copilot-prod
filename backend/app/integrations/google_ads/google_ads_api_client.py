@@ -65,16 +65,21 @@ class GoogleAdsAPIClient:
                 "client_secret": creds_data.get("client_secret"),
                 "refresh_token": creds_data.get("refresh_token"),
                 "use_proto_plus": False,  # Disable proto-plus to avoid GRPC issues
-                "http_proxy": None,  # Ensure no proxy issues
             }
             
             # Log config for debugging (without secrets)
-            logger.info(f"Initializing Google Ads client with developer_token: {settings.GOOGLE_ADS_DEVELOPER_TOKEN[:5]}...")
-            logger.info(f"Client ID present: {bool(creds_data.get('client_id'))}")
-            logger.info(f"Refresh token present: {bool(creds_data.get('refresh_token'))}")
+            logger.info(f"Initializing Google Ads client")
+            logger.info(f"Developer token: {settings.GOOGLE_ADS_DEVELOPER_TOKEN[:10]}...")
+            logger.info(f"Client ID: {creds_data.get('client_id', '')[:20]}...")
+            logger.info(f"Has refresh token: {bool(creds_data.get('refresh_token'))}")
             
             # Initialize client with OAuth2 credentials format
-            self.client = GoogleAdsClient.load_from_dict(config)
+            try:
+                self.client = GoogleAdsClient.load_from_dict(config)
+                logger.info("Google Ads client created successfully")
+            except Exception as e:
+                logger.error(f"Failed to create Google Ads client: {e}")
+                raise
             
             # Get customer ID (first accessible account)
             await self._get_customer_id()
@@ -270,6 +275,35 @@ class GoogleAdsAPIClient:
         except Exception as e:
             logger.error(f"Failed to fetch wasted keywords: {e}")
             return []
+    
+    async def test_connection(self) -> bool:
+        """
+        Simple test to verify Google Ads connection works.
+        
+        Returns:
+            True if connection successful
+        """
+        try:
+            if not self.client:
+                if not await self.initialize():
+                    return False
+            
+            # Try the simplest possible API call
+            customer_service = self.client.get_service("CustomerService")
+            
+            # This call doesn't need a customer ID
+            try:
+                request = self.client.get_type("ListAccessibleCustomersRequest")
+                result = customer_service.list_accessible_customers(request=request)
+                logger.info(f"Connection test successful. Found {len(result.resource_names)} accessible customers")
+                return True
+            except Exception as e:
+                logger.error(f"Connection test failed: {e}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to test connection: {e}")
+            return False
     
     async def get_account_performance(self) -> Dict[str, Any]:
         """
