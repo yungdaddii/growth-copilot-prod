@@ -177,21 +177,33 @@ class GoogleAdsOAuthHandler:
             if redis:
                 redis_key = f"google_ads:credentials:{session_id}"
                 logger.info(f"Storing Google Ads credentials in Redis with key: {redis_key}")
+                logger.info(f"Session ID from OAuth callback: {session_id}")
+                logger.info(f"Has refresh token: {bool(credentials.refresh_token)}")
                 
-                await redis.setex(
-                    redis_key,
-                    30 * 24 * 3600,  # 30 days
-                    json.dumps(credentials_data)
-                )
+                # Store credentials
+                try:
+                    await redis.setex(
+                        redis_key,
+                        30 * 24 * 3600,  # 30 days
+                        json.dumps(credentials_data)
+                    )
+                    logger.info(f"Redis setex completed for key: {redis_key}")
+                except Exception as e:
+                    logger.error(f"Failed to store in Redis: {e}")
+                    raise
                 
                 # Verify storage
                 test_retrieve = await redis.get(redis_key)
                 if test_retrieve:
                     logger.info(f"✅ Successfully stored and verified Google Ads credentials for session {session_id}")
+                    # Double check the key is correct
+                    all_keys = await redis.keys("google_ads:credentials:*")
+                    logger.info(f"All Google Ads keys in Redis: {[k.decode() if isinstance(k, bytes) else k for k in all_keys]}")
                 else:
                     logger.error(f"❌ Failed to verify stored credentials for session {session_id}")
             else:
                 logger.error(f"❌ Redis connection not available! Cannot store credentials for session {session_id}")
+                raise Exception("Redis not available for credential storage")
             
             logger.info(
                 "Google Ads OAuth successful",
@@ -222,27 +234,32 @@ class GoogleAdsOAuthHandler:
             Valid Google Credentials object or None
         """
         try:
-            logger.info(f"Getting credentials for session_id: {session_id}")
+            logger.info(f"[GET_CREDS] Getting credentials for session_id: {session_id}")
             
             # Get credentials from Redis
             redis = await get_redis()
             if not redis:
-                logger.error("Redis connection not available")
+                logger.error("[GET_CREDS] Redis connection not available")
                 return None
             
             redis_key = f"google_ads:credentials:{session_id}"
-            logger.info(f"Looking for credentials with key: {redis_key}")
+            logger.info(f"[GET_CREDS] Looking for credentials with key: {redis_key}")
+            
+            # List all keys first for debugging
+            all_keys = await redis.keys("google_ads:credentials:*")
+            if all_keys:
+                decoded_keys = [k.decode() if isinstance(k, bytes) else k for k in all_keys]
+                logger.info(f"[GET_CREDS] Found {len(all_keys)} Google Ads keys in Redis: {decoded_keys}")
+                # Check if our session_id is in there with different format
+                for key in decoded_keys:
+                    if session_id in key:
+                        logger.info(f"[GET_CREDS] Found matching key: {key}")
+            else:
+                logger.warning("[GET_CREDS] No Google Ads credentials found in Redis at all")
             
             creds_json = await redis.get(redis_key)
             if not creds_json:
-                logger.warning(f"No credentials found in Redis for session {session_id}")
-                
-                # List all Google Ads keys to debug
-                all_keys = await redis.keys("google_ads:credentials:*")
-                if all_keys:
-                    logger.info(f"Found {len(all_keys)} Google Ads credential keys in Redis: {[k.decode() if isinstance(k, bytes) else k for k in all_keys[:3]]}...")
-                else:
-                    logger.warning("No Google Ads credentials found in Redis at all")
+                logger.warning(f"[GET_CREDS] No credentials found for key: {redis_key}")
                 return None
             
             logger.info(f"Found credentials for session {session_id}")
