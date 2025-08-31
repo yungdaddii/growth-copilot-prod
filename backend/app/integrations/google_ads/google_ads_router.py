@@ -126,17 +126,21 @@ async def check_connection_status(session_id: str = Query(...)):
         }
 
 
+class DisconnectRequest(BaseModel):
+    session_id: str
+
 @router.post("/disconnect")
-async def disconnect(session_id: str):
+async def disconnect(request: DisconnectRequest):
     """
     Disconnect Google Ads for a session.
     
     Args:
-        session_id: User's session ID
+        request: Request containing session_id
         
     Returns:
         Disconnection result
     """
+    session_id = request.session_id
     # Temporarily disabled check for testing
     # if not is_integration_enabled("google_ads"):
     #     raise HTTPException(status_code=403, detail="Google Ads integration is disabled")
