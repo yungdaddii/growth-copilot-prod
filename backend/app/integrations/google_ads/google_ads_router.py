@@ -79,9 +79,13 @@ async def oauth_callback(
             )
             
     except Exception as e:
+        import traceback
         logger.error(f"OAuth callback failed: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Include more specific error in redirect for debugging
+        error_msg = str(e).replace(" ", "+").replace(":", "")[:100]  # Sanitize for URL
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}?google_ads_connected=false&error=OAuth+failed"
+            url=f"{settings.FRONTEND_URL}?google_ads_connected=false&error={error_msg}"
         )
 
 

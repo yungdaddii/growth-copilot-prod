@@ -152,45 +152,26 @@ class GoogleAdsOAuthHandler:
             flow.fetch_token(code=code)
             credentials = flow.credentials
             
-            # Store encrypted credentials in database
-            async for db in get_db():
-                # Check if integration exists
-                existing = await db.query(Integration).filter(
-                    Integration.user_id == session_id,
-                    Integration.type == IntegrationType.GOOGLE_ADS
-                ).first()
-                
-                credentials_data = {
-                    "token": credentials.token,
-                    "refresh_token": credentials.refresh_token,
-                    "token_uri": credentials.token_uri,
-                    "client_id": credentials.client_id,
-                    "client_secret": credentials.client_secret,
-                    "scopes": credentials.scopes,
-                    "expiry": credentials.expiry.isoformat() if credentials.expiry else None
-                }
-                
-                encrypted_creds = encrypt_data(json.dumps(credentials_data))
-                
-                if existing:
-                    # Update existing integration
-                    existing.credentials = encrypted_creds
-                    existing.is_active = True
-                    existing.last_sync = datetime.utcnow()
-                    existing.last_error = None
-                else:
-                    # Create new integration
-                    integration = Integration(
-                        user_id=session_id,
-                        type=IntegrationType.GOOGLE_ADS,
-                        name="Google Ads",
-                        credentials=encrypted_creds,
-                        is_active=True,
-                        meta_data={}
-                    )
-                    db.add(integration)
-                
-                await db.commit()
+            # Store credentials in Redis for now (simpler than database)
+            credentials_data = {
+                "token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": credentials.scopes,
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None
+            }
+            
+            # Store in Redis with 30 day expiry
+            redis = await get_redis()
+            if redis:
+                await redis.setex(
+                    f"google_ads:credentials:{session_id}",
+                    30 * 24 * 3600,  # 30 days
+                    json.dumps(credentials_data)
+                )
+                logger.info(f"Stored Google Ads credentials in Redis for session {session_id}")
             
             logger.info(
                 "Google Ads OAuth successful",
@@ -221,54 +202,56 @@ class GoogleAdsOAuthHandler:
             Valid Google Credentials object or None
         """
         try:
-            async for db in get_db():
-                integration = await db.query(Integration).filter(
-                    Integration.user_id == session_id,
-                    Integration.type == IntegrationType.GOOGLE_ADS,
-                    Integration.is_active == True
-                ).first()
+            # Get credentials from Redis
+            redis = await get_redis()
+            if not redis:
+                return None
                 
-                if not integration or not integration.credentials:
-                    return None
+            creds_json = await redis.get(f"google_ads:credentials:{session_id}")
+            if not creds_json:
+                return None
                 
-                # Decrypt credentials
-                creds_json = decrypt_data(integration.credentials)
-                creds_data = json.loads(creds_json)
+            creds_data = json.loads(creds_json)
+            
+            # Create Credentials object
+            credentials = Credentials(
+                token=creds_data.get("token"),
+                refresh_token=creds_data.get("refresh_token"),
+                token_uri=creds_data.get("token_uri"),
+                client_id=creds_data.get("client_id"),
+                client_secret=creds_data.get("client_secret"),
+                scopes=creds_data.get("scopes")
+            )
+            
+            # Set expiry if exists
+            if creds_data.get("expiry"):
+                credentials.expiry = datetime.fromisoformat(creds_data["expiry"])
+            
+            # Refresh if expired
+            if credentials.expired:
+                request = google_requests.Request()
+                credentials.refresh(request)
                 
-                # Create Credentials object
-                credentials = Credentials(
-                    token=creds_data.get("token"),
-                    refresh_token=creds_data.get("refresh_token"),
-                    token_uri=creds_data.get("token_uri"),
-                    client_id=creds_data.get("client_id"),
-                    client_secret=creds_data.get("client_secret"),
-                    scopes=creds_data.get("scopes")
-                )
+                # Update stored credentials in Redis
+                new_creds_data = {
+                    "token": credentials.token,
+                    "refresh_token": credentials.refresh_token,
+                    "token_uri": credentials.token_uri,
+                    "client_id": credentials.client_id,
+                    "client_secret": credentials.client_secret,
+                    "scopes": credentials.scopes,
+                    "expiry": credentials.expiry.isoformat() if credentials.expiry else None
+                }
                 
-                # Set expiry if exists
-                if creds_data.get("expiry"):
-                    credentials.expiry = datetime.fromisoformat(creds_data["expiry"])
-                
-                # Refresh if expired
-                if credentials.expired:
-                    request = google_requests.Request()
-                    credentials.refresh(request)
-                    
-                    # Update stored credentials
-                    new_creds_data = {
-                        "token": credentials.token,
-                        "refresh_token": credentials.refresh_token,
-                        "token_uri": credentials.token_uri,
-                        "client_id": credentials.client_id,
-                        "client_secret": credentials.client_secret,
-                        "scopes": credentials.scopes,
-                        "expiry": credentials.expiry.isoformat() if credentials.expiry else None
-                    }
-                    
-                    integration.credentials = encrypt_data(json.dumps(new_creds_data))
-                    await db.commit()
-                
-                return credentials
+                redis = await get_redis()
+                if redis:
+                    await redis.setex(
+                        f"google_ads:credentials:{session_id}",
+                        30 * 24 * 3600,  # 30 days
+                        json.dumps(new_creds_data)
+                    )
+            
+            return credentials
                 
         except Exception as e:
             logger.error(f"Failed to get valid credentials: {e}")
@@ -285,26 +268,18 @@ class GoogleAdsOAuthHandler:
             True if disconnected successfully
         """
         try:
-            async for db in get_db():
-                integration = await db.query(Integration).filter(
-                    Integration.user_id == session_id,
-                    Integration.type == IntegrationType.GOOGLE_ADS
-                ).first()
-                
-                if integration:
-                    # Soft delete - mark as inactive but keep record
-                    integration.is_active = False
-                    integration.credentials = None  # Clear credentials
-                    integration.last_error = "User disconnected"
-                    await db.commit()
-                    
+            # Remove credentials from Redis
+            redis = await get_redis()
+            if redis:
+                result = await redis.delete(f"google_ads:credentials:{session_id}")
+                if result:
                     logger.info(
                         "Google Ads disconnected",
                         session_id=session_id
                     )
                     return True
-                
-                return False
+            
+            return False
                 
         except Exception as e:
             logger.error(f"Failed to disconnect: {e}")
