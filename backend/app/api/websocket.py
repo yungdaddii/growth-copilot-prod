@@ -172,189 +172,210 @@ async def websocket_endpoint(
                 
                 # If not handled by context, do regular processing
                 if not handled_by_context:
-                    # Regular intent detection and processing
-                    intent = await nlp.detect_intent(payload.content)
-                    logger.info(f"Detected intent: {intent}")
+                    # Check for Google Ads intent first
+                    google_ads_response = None
+                    try:
+                        from app.integrations import is_integration_enabled
+                        if is_integration_enabled("google_ads"):
+                            from app.integrations.google_ads.google_ads_intent_detector import GoogleAdsIntentDetector
+                            google_ads_intent = GoogleAdsIntentDetector.detect_intent(payload.content)
+                            if google_ads_intent:
+                                from app.integrations.google_ads.google_ads_chat_handler import GoogleAdsChatHandler
+                                handler = GoogleAdsChatHandler()
+                                google_ads_response = await handler.process_message(
+                                    payload.content,
+                                    session_id,
+                                    None
+                                )
+                    except Exception as e:
+                        logger.error(f"Google Ads integration error: {e}")
                     
-                    if intent["type"] == "unsupported_topic":
-                        # Handle questions about things we don't analyze
-                        if intent.get("topic") == "tracking_attribution":
+                    if google_ads_response:
+                        response = google_ads_response
+                    else:
+                        # Regular intent detection and processing
+                        intent = await nlp.detect_intent(payload.content)
+                        logger.info(f"Detected intent: {intent}")
+                        
+                        if intent["type"] == "unsupported_topic":
+                            # Handle questions about things we don't analyze
+                            if intent.get("topic") == "tracking_attribution":
+                                response = {
+                                    "content": (
+                                        "📈 **Attribution & Tracking Analysis**\n\n"
+                                        "I don't analyze internal tracking setups like Google Analytics, UTM parameters, or attribution models. "
+                                        "These require access to private analytics data.\n\n"
+                                        "**What I CAN help you with:**\n"
+                                        "• ⚡ **Performance optimization** - Load times, Core Web Vitals\n"
+                                        "• 🎯 **Conversion optimization** - Forms, CTAs, user flow\n"
+                                        "• 🏆 **Competitor analysis** - Feature comparisons, gaps\n"
+                                        "• 🔍 **SEO improvements** - Meta tags, content gaps\n"
+                                        "• 📱 **Mobile experience** - Responsiveness issues\n\n"
+                                        "Would you like me to analyze any of these areas instead?"
+                                    ),
+                                    "metadata": {
+                                        "type": "unsupported_query",
+                                        "topic": "tracking_attribution"
+                                    }
+                                }
+                            else:
+                                response = {
+                                    "content": "I can't analyze that specific aspect, but I can help with website optimization, competitor analysis, and conversion improvements. What would you like to explore?",
+                                    "metadata": {"type": "unsupported_query"}
+                                }
+                        
+                        elif intent["type"] == "analyze_domain":
+                            domain = intent["domain"]
+                            logger.info(f"Starting domain analysis for: {domain}")
+                            
+                            # Track analysis start
+                            Analytics.track_analysis(
+                                domain=domain,
+                                conversation_id=str(conversation.id),
+                                status="started"
+                            )
+                            
+                            # Start analysis with streaming updates
+                            async def update_callback(status: str, message: str, progress: int = None):
+                                # Generate natural language update
+                                natural_message = await ai_engine.generate_streaming_update(status, progress)
+                                
+                                await manager.send_message(
+                                    client_id,
+                                    WebSocketMessage(
+                                        type="analysis_update",
+                                        payload=AnalysisUpdatePayload(
+                                            status=status,
+                                            message=natural_message,
+                                            progress=progress
+                                        ).model_dump()
+                                    )
+                                )
+                            
+                            # Run analysis with new database session
+                            from app.database import get_db_context
+                            import time
+                            analysis_start_time = time.time()
+                            
+                            try:
+                                async with get_db_context() as db:
+                                    analyzer = DomainAnalyzer(db)
+                                    analysis_result = await analyzer.analyze(
+                                        domain=domain,
+                                        conversation_id=conversation.id,
+                                        update_callback=update_callback
+                                    )
+                                
+                                # Track successful analysis
+                                analysis_duration = time.time() - analysis_start_time
+                                # Handle both dict and object types
+                                if hasattr(analysis_result, 'issues'):
+                                    issues_count = len(analysis_result.issues) if analysis_result.issues else 0
+                                elif isinstance(analysis_result, dict):
+                                    issues_count = len(analysis_result.get("issues", [])) if analysis_result else 0
+                                else:
+                                    issues_count = 0
+                                
+                                Analytics.track_analysis(
+                                    domain=domain,
+                                    conversation_id=str(conversation.id),
+                                    status="completed",
+                                    duration=analysis_duration,
+                                    issues_found=issues_count
+                                )
+                            except Exception as e:
+                                # Track failed analysis
+                                analysis_duration = time.time() - analysis_start_time
+                                Analytics.track_analysis(
+                                    domain=domain,
+                                    conversation_id=str(conversation.id),
+                                    status="failed",
+                                    duration=analysis_duration,
+                                    error=str(e)
+                                )
+                                raise
+                            
+                            # Generate conversational response using AI
+                            initial_response = await ai_engine.format_initial_response(domain, analysis_result)
                             response = {
-                                "content": (
-                                    "📈 **Attribution & Tracking Analysis**\n\n"
-                                    "I don't analyze internal tracking setups like Google Analytics, UTM parameters, or attribution models. "
-                                    "These require access to private analytics data.\n\n"
-                                    "**What I CAN help you with:**\n"
-                                    "• ⚡ **Performance optimization** - Load times, Core Web Vitals\n"
-                                    "• 🎯 **Conversion optimization** - Forms, CTAs, user flow\n"
-                                    "• 🏆 **Competitor analysis** - Feature comparisons, gaps\n"
-                                    "• 🔍 **SEO improvements** - Meta tags, content gaps\n"
-                                    "• 📱 **Mobile experience** - Responsiveness issues\n\n"
-                                    "Would you like me to analyze any of these areas instead?"
-                                ),
+                                "content": initial_response,
                                 "metadata": {
-                                    "type": "unsupported_query",
-                                    "topic": "tracking_attribution"
+                                    "type": "analysis_complete",
+                                    "domain": domain,
+                                    "has_suggestions": True
                                 }
                             }
-                        else:
-                            response = {
-                                "content": "I can't analyze that specific aspect, but I can help with website optimization, competitor analysis, and conversion improvements. What would you like to explore?",
-                                "metadata": {"type": "unsupported_query"}
-                            }
-                    
-                    elif intent["type"] == "analyze_domain":
-                        domain = intent["domain"]
-                        logger.info(f"Starting domain analysis for: {domain}")
-                        
-                        # Track analysis start
-                        Analytics.track_analysis(
-                            domain=domain,
-                            conversation_id=str(conversation.id),
-                            status="started"
-                        )
-                        
-                        # Start analysis with streaming updates
-                        async def update_callback(status: str, message: str, progress: int = None):
-                            # Generate natural language update
-                            natural_message = await ai_engine.generate_streaming_update(status, progress)
                             
-                            await manager.send_message(
-                                client_id,
-                                WebSocketMessage(
-                                    type="analysis_update",
-                                    payload=AnalysisUpdatePayload(
-                                        status=status,
-                                        message=natural_message,
-                                        progress=progress
-                                    ).model_dump()
-                                )
-                            )
-                        
-                        # Run analysis with new database session
-                        from app.database import get_db_context
-                        import time
-                        analysis_start_time = time.time()
-                        
-                        try:
+                        elif intent["type"] == "follow_up":
+                            # Use AI engine for follow-ups too
+                            from app.database import get_db_context
                             async with get_db_context() as db:
-                                analyzer = DomainAnalyzer(db)
-                                analysis_result = await analyzer.analyze(
-                                    domain=domain,
-                                    conversation_id=conversation.id,
-                                    update_callback=update_callback
+                                result = await db.execute(
+                                    select(Analysis)
+                                    .where(Analysis.conversation_id == conversation.id)
+                                    .order_by(Analysis.started_at.desc())
+                                    .limit(1)
                                 )
+                                last_analysis = result.scalar_one_or_none()
+                                
+                                # Get conversation history
+                                messages_result = await db.execute(
+                                    select(Message)
+                                    .where(Message.conversation_id == conversation.id)
+                                    .order_by(Message.created_at.desc())
+                                    .limit(10)
+                                )
+                                messages = messages_result.scalars().all()
                             
-                            # Track successful analysis
-                            analysis_duration = time.time() - analysis_start_time
-                            # Handle both dict and object types
-                            if hasattr(analysis_result, 'issues'):
-                                issues_count = len(analysis_result.issues) if analysis_result.issues else 0
-                            elif isinstance(analysis_result, dict):
-                                issues_count = len(analysis_result.get("issues", [])) if analysis_result else 0
-                            else:
-                                issues_count = 0
+                            conversation_history = []
+                            for msg in reversed(messages):
+                                conversation_history.append({
+                                    "role": "user" if msg.role == MessageRole.USER else "assistant",
+                                    "content": msg.content
+                                })
                             
-                            Analytics.track_analysis(
-                                domain=domain,
-                                conversation_id=str(conversation.id),
-                                status="completed",
-                                duration=analysis_duration,
-                                issues_found=issues_count
+                            # Use AI engine for natural response
+                            response = await ai_engine.generate_response(
+                                user_message=payload.content,
+                                analysis=last_analysis,
+                                conversation_history=conversation_history
                             )
-                        except Exception as e:
-                            # Track failed analysis
-                            analysis_duration = time.time() - analysis_start_time
-                            Analytics.track_analysis(
-                                domain=domain,
-                                conversation_id=str(conversation.id),
-                                status="failed",
-                                duration=analysis_duration,
-                                error=str(e)
-                            )
-                            raise
-                        
-                        # Generate conversational response using AI
-                        initial_response = await ai_engine.format_initial_response(domain, analysis_result)
-                        response = {
-                            "content": initial_response,
-                            "metadata": {
-                                "type": "analysis_complete",
-                                "domain": domain,
-                                "has_suggestions": True
-                            }
-                        }
-                        
-                    elif intent["type"] == "follow_up":
-                        # Use AI engine for follow-ups too
-                        from app.database import get_db_context
-                        async with get_db_context() as db:
-                            result = await db.execute(
-                                select(Analysis)
-                                .where(Analysis.conversation_id == conversation.id)
-                                .order_by(Analysis.started_at.desc())
-                                .limit(1)
-                            )
-                            last_analysis = result.scalar_one_or_none()
                             
-                            # Get conversation history
-                            messages_result = await db.execute(
-                                select(Message)
-                                .where(Message.conversation_id == conversation.id)
-                                .order_by(Message.created_at.desc())
-                                .limit(10)
-                            )
-                            messages = messages_result.scalars().all()
-                        
-                        conversation_history = []
-                        for msg in reversed(messages):
-                            conversation_history.append({
-                                "role": "user" if msg.role == MessageRole.USER else "assistant",
-                                "content": msg.content
-                            })
-                        
-                        # Use AI engine for natural response
-                        response = await ai_engine.generate_response(
-                            user_message=payload.content,
-                            analysis=last_analysis,
-                            conversation_history=conversation_history
-                        )
-                        
-                    else:
-                        # Check if we have a previous analysis for context
-                        from app.database import get_db_context
-                        async with get_db_context() as db:
-                            result = await db.execute(
-                                select(Analysis)
-                                .where(Analysis.conversation_id == conversation.id)
-                                .order_by(Analysis.started_at.desc())
-                                .limit(1)
-                            )
-                            last_analysis = result.scalar_one_or_none()
+                        else:
+                            # Check if we have a previous analysis for context
+                            from app.database import get_db_context
+                            async with get_db_context() as db:
+                                result = await db.execute(
+                                    select(Analysis)
+                                    .where(Analysis.conversation_id == conversation.id)
+                                    .order_by(Analysis.started_at.desc())
+                                    .limit(1)
+                                )
+                                last_analysis = result.scalar_one_or_none()
+                                
+                                # Get conversation history for context
+                                messages_result = await db.execute(
+                                    select(Message)
+                                    .where(Message.conversation_id == conversation.id)
+                                    .order_by(Message.created_at.desc())
+                                    .limit(10)
+                                )
+                                messages = messages_result.scalars().all()
                             
-                            # Get conversation history for context
-                            messages_result = await db.execute(
-                                select(Message)
-                                .where(Message.conversation_id == conversation.id)
-                                .order_by(Message.created_at.desc())
-                                .limit(10)
+                            # Build conversation history
+                            conversation_history = []
+                            for msg in reversed(messages):  # Reverse to get chronological order
+                                conversation_history.append({
+                                    "role": "user" if msg.role == MessageRole.USER else "assistant",
+                                    "content": msg.content
+                                })
+                            
+                            # Use AI engine for natural conversation
+                            response = await ai_engine.generate_response(
+                                user_message=payload.content,
+                                analysis=last_analysis,
+                                conversation_history=conversation_history
                             )
-                            messages = messages_result.scalars().all()
-                        
-                        # Build conversation history
-                        conversation_history = []
-                        for msg in reversed(messages):  # Reverse to get chronological order
-                            conversation_history.append({
-                                "role": "user" if msg.role == MessageRole.USER else "assistant",
-                                "content": msg.content
-                            })
-                        
-                        # Use AI engine for natural conversation
-                        response = await ai_engine.generate_response(
-                            user_message=payload.content,
-                            analysis=last_analysis,
-                            conversation_history=conversation_history
-                        )
                     
                     # Save assistant response
                     from app.database import get_db_context
