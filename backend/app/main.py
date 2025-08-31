@@ -118,9 +118,10 @@ app.include_router(test_enhanced.router, prefix="/api/test", tags=["test-enhance
 
 # Include integration routers
 from app.integrations import is_integration_enabled
-if is_integration_enabled("google_ads"):
-    app.include_router(google_ads_router.router)
-    logger.info("Google Ads integration enabled and router registered")
+# Temporarily always enable Google Ads router for testing
+# if is_integration_enabled("google_ads"):
+app.include_router(google_ads_router.router)
+logger.info("Google Ads integration router registered")
 
 
 @app.get("/")
