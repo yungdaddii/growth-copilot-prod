@@ -19,7 +19,10 @@ class FeatureFlags:
         "context_memory": "ENABLE_CONTEXT_MEMORY",
         "specific_recommendations": "ENABLE_SPECIFIC_RECS",
         "code_examples": "ENABLE_CODE_EXAMPLES",
-        "dynamic_prompts": "ENABLE_DYNAMIC_PROMPTS"
+        "dynamic_prompts": "ENABLE_DYNAMIC_PROMPTS",
+        "google_ads_integration": "ENABLE_GOOGLE_ADS_INTEGRATION",
+        "salesforce_integration": "ENABLE_SALESFORCE_INTEGRATION",
+        "hubspot_integration": "ENABLE_HUBSPOT_INTEGRATION"
     }
     
     @classmethod

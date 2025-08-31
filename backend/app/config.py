@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     BACKEND_URL: str = "http://localhost:8000"
     
+    # Google Ads Integration
+    GOOGLE_ADS_CLIENT_ID: str = ""
+    GOOGLE_ADS_CLIENT_SECRET: str = ""
+    GOOGLE_ADS_DEVELOPER_TOKEN: str = ""
+    GOOGLE_ADS_REDIRECT_URI: str = ""
+    ENABLE_GOOGLE_ADS_INTEGRATION: bool = False
+    
     # Urlbox Screenshot API
     URLBOX_API_KEY: str = ""
     URLBOX_API_SECRET: str = ""

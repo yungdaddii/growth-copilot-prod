@@ -1,0 +1,117 @@
+"""
+Google Ads API Router
+
+Handles OAuth callbacks and API endpoints for Google Ads integration.
+"""
+
+from fastapi import APIRouter, Request, HTTPException, Query
+from fastapi.responses import RedirectResponse, JSONResponse
+import structlog
+
+from app.integrations import is_integration_enabled
+from .google_ads_oauth_handler import GoogleAdsOAuthHandler
+
+logger = structlog.get_logger()
+router = APIRouter(prefix="/api/integrations/google-ads", tags=["google-ads"])
+
+
+@router.get("/oauth/callback")
+async def oauth_callback(
+    code: str = Query(..., description="Authorization code from Google"),
+    state: str = Query(..., description="State token for verification")
+):
+    """
+    Handle OAuth callback from Google.
+    
+    This endpoint is called by Google after user grants permission.
+    """
+    if not is_integration_enabled("google_ads"):
+        raise HTTPException(status_code=403, detail="Google Ads integration is disabled")
+    
+    try:
+        oauth_handler = GoogleAdsOAuthHandler()
+        result = await oauth_handler.handle_callback(code, state)
+        
+        if result["success"]:
+            # Redirect to frontend with success message
+            frontend_url = settings.FRONTEND_URL
+            return RedirectResponse(
+                url=f"{frontend_url}?google_ads_connected=true&message=Google+Ads+connected+successfully"
+            )
+        else:
+            # Redirect with error
+            return RedirectResponse(
+                url=f"{frontend_url}?google_ads_connected=false&error={result.get('error', 'Connection failed')}"
+            )
+            
+    except Exception as e:
+        logger.error(f"OAuth callback failed: {e}")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}?google_ads_connected=false&error=OAuth+failed"
+        )
+
+
+@router.get("/status")
+async def check_connection_status(session_id: str = Query(...)):
+    """
+    Check if Google Ads is connected for a session.
+    
+    Args:
+        session_id: User's session ID
+        
+    Returns:
+        Connection status
+    """
+    if not is_integration_enabled("google_ads"):
+        return JSONResponse(
+            content={"connected": False, "error": "Integration disabled"},
+            status_code=403
+        )
+    
+    try:
+        oauth_handler = GoogleAdsOAuthHandler()
+        credentials = await oauth_handler.get_valid_credentials(session_id)
+        
+        return {
+            "connected": credentials is not None,
+            "platform": "google_ads"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to check connection status: {e}")
+        return {
+            "connected": False,
+            "error": str(e)
+        }
+
+
+@router.post("/disconnect")
+async def disconnect(session_id: str):
+    """
+    Disconnect Google Ads for a session.
+    
+    Args:
+        session_id: User's session ID
+        
+    Returns:
+        Disconnection result
+    """
+    if not is_integration_enabled("google_ads"):
+        raise HTTPException(status_code=403, detail="Google Ads integration is disabled")
+    
+    try:
+        oauth_handler = GoogleAdsOAuthHandler()
+        success = await oauth_handler.disconnect(session_id)
+        
+        return {
+            "success": success,
+            "message": "Google Ads disconnected" if success else "No connection found"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to disconnect: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Import settings at the end to avoid circular imports
+from app.config import settings
