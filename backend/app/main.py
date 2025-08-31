@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import engine, Base
 from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced
 from app.utils.cache import init_redis
+from app.integrations.google_ads import google_ads_router
 
 # Configure structured logging
 structlog.configure(
@@ -114,6 +115,12 @@ app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(share.router, prefix="/api/share", tags=["share"])
 app.include_router(test_conversation.router, prefix="/api/test", tags=["test"])
 app.include_router(test_enhanced.router, prefix="/api/test", tags=["test-enhanced"])
+
+# Include integration routers
+from app.integrations import is_integration_enabled
+if is_integration_enabled("google_ads"):
+    app.include_router(google_ads_router.router)
+    logger.info("Google Ads integration enabled and router registered")
 
 
 @app.get("/")

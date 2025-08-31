@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useChatStore } from '@/store/chat'
-import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles } from 'lucide-react'
+import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles, Plug } from 'lucide-react'
 import { PromptLibrary } from '@/components/PromptLibrary'
+import { IntegrationsPanel } from '@/components/integrations/IntegrationsPanel'
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [promptLibraryOpen, setPromptLibraryOpen] = useState(false)
+  const [integrationsOpen, setIntegrationsOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -149,6 +151,26 @@ export default function Home() {
           }}>
             <BookOpen size={16} />
             Library
+          </button>
+          <button 
+            onClick={() => setIntegrationsOpen(true)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              backgroundColor: 'transparent',
+              color: 'rgba(255,255,255,0.7)',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              textAlign: 'left'
+            }}
+          >
+            <Plug size={16} />
+            Integrations
           </button>
         </div>
 
@@ -698,6 +720,12 @@ export default function Home() {
         isOpen={promptLibraryOpen}
         onClose={() => setPromptLibraryOpen(false)}
         onSelectPrompt={handlePromptSelect}
+      />
+      
+      {/* Integrations Panel */}
+      <IntegrationsPanel
+        isOpen={integrationsOpen}
+        onClose={() => setIntegrationsOpen(false)}
       />
     </div>
   )

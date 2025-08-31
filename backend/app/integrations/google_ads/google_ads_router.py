@@ -6,6 +6,7 @@ Handles OAuth callbacks and API endpoints for Google Ads integration.
 
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import RedirectResponse, JSONResponse
+from pydantic import BaseModel
 import structlog
 
 from app.integrations import is_integration_enabled
@@ -13,6 +14,37 @@ from .google_ads_oauth_handler import GoogleAdsOAuthHandler
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/integrations/google-ads", tags=["google-ads"])
+
+class AuthRequest(BaseModel):
+    session_id: str
+
+
+@router.post("/auth-url")
+async def generate_auth_url(request: AuthRequest):
+    """
+    Generate OAuth authorization URL for user to grant access.
+    
+    Args:
+        request: Contains session_id for tracking
+        
+    Returns:
+        Authorization URL to redirect user to
+    """
+    if not is_integration_enabled("google_ads"):
+        raise HTTPException(status_code=403, detail="Google Ads integration is disabled")
+    
+    try:
+        oauth_handler = GoogleAdsOAuthHandler()
+        result = await oauth_handler.generate_auth_url(request.session_id)
+        
+        return JSONResponse(content={
+            "auth_url": result["auth_url"],
+            "state": result["state"]
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to generate auth URL: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/oauth/callback")
