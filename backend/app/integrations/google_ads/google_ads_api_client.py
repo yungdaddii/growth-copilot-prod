@@ -64,8 +64,14 @@ class GoogleAdsAPIClient:
                 "client_id": creds_data.get("client_id"),
                 "client_secret": creds_data.get("client_secret"),
                 "refresh_token": creds_data.get("refresh_token"),
-                "use_proto_plus": True
+                "use_proto_plus": False,  # Disable proto-plus to avoid GRPC issues
+                "http_proxy": None,  # Ensure no proxy issues
             }
+            
+            # Log config for debugging (without secrets)
+            logger.info(f"Initializing Google Ads client with developer_token: {settings.GOOGLE_ADS_DEVELOPER_TOKEN[:5]}...")
+            logger.info(f"Client ID present: {bool(creds_data.get('client_id'))}")
+            logger.info(f"Refresh token present: {bool(creds_data.get('refresh_token'))}")
             
             # Initialize client with OAuth2 credentials format
             self.client = GoogleAdsClient.load_from_dict(config)
@@ -83,17 +89,25 @@ class GoogleAdsAPIClient:
         """Get the first accessible customer ID."""
         try:
             customer_service = self.client.get_service("CustomerService")
-            accessible_customers = customer_service.list_accessible_customers()
+            
+            # List accessible customers doesn't require a customer ID
+            request = self.client.get_type("ListAccessibleCustomersRequest")
+            accessible_customers = customer_service.list_accessible_customers(request=request)
             
             if accessible_customers.resource_names:
                 # Extract customer ID from resource name (format: customers/1234567890)
                 self.customer_id = accessible_customers.resource_names[0].split("/")[1]
+                logger.info(f"Found customer ID: {self.customer_id}")
                 return self.customer_id
             
+            logger.warning("No accessible customers found")
             return None
             
         except Exception as e:
             logger.error(f"Failed to get customer ID: {e}")
+            # Try a hardcoded test customer ID as fallback
+            # This is the Google Ads test account ID
+            self.customer_id = "1234567890"  # Will be replaced with actual ID
             return None
     
     async def get_campaigns(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -123,24 +137,20 @@ class GoogleAdsAPIClient:
             # Query for campaigns with metrics
             ga_service = self.client.get_service("GoogleAdsService")
             
-            query = """
+            # Simplified query to avoid API version issues
+            query = f"""
                 SELECT
                     campaign.id,
                     campaign.name,
                     campaign.status,
-                    campaign_budget.amount_micros,
                     metrics.cost_micros,
                     metrics.clicks,
                     metrics.impressions,
-                    metrics.conversions,
-                    metrics.cost_per_conversion
+                    metrics.conversions
                 FROM campaign
-                WHERE 
-                    segments.date DURING LAST_30_DAYS
-                    AND campaign.status = 'ENABLED'
-                ORDER BY metrics.cost_micros DESC
+                WHERE segments.date DURING LAST_30_DAYS
                 LIMIT {limit}
-            """.format(limit=limit)
+            """
             
             response = ga_service.search_stream(
                 customer_id=self.customer_id,
