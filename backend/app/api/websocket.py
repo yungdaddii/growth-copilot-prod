@@ -172,32 +172,14 @@ async def websocket_endpoint(
                 
                 # If not handled by context, do regular processing
                 if not handled_by_context:
-                    # Check for Google Ads integration first
-                    google_ads_response = None
-                    try:
-                        from app.integrations import is_integration_enabled
-                        if is_integration_enabled("google_ads"):
-                            from app.integrations.google_ads.google_ads_chat_handler import GoogleAdsChatHandler
-                            google_ads_handler = GoogleAdsChatHandler()
-                            google_ads_response = await google_ads_handler.process_message(
-                                payload.content,
-                                session_id,
-                                conversation.domain if conversation else None
-                            )
-                    except Exception as e:
-                        logger.error(f"Google Ads integration error: {e}")
+                    # Regular intent detection and processing
+                    intent = await nlp.detect_intent(payload.content)
+                    logger.info(f"Detected intent: {intent}")
                     
-                    if google_ads_response:
-                        response = google_ads_response
-                    else:
-                        # Regular intent detection and processing
-                        intent = await nlp.detect_intent(payload.content)
-                        logger.info(f"Detected intent: {intent}")
-                        
-                        if intent["type"] == "unsupported_topic":
-                            # Handle questions about things we don't analyze
-                            if intent.get("topic") == "tracking_attribution":
-                                response = {
+                    if intent["type"] == "unsupported_topic":
+                        # Handle questions about things we don't analyze
+                        if intent.get("topic") == "tracking_attribution":
+                            response = {
                                 "content": (
                                     "📈 **Attribution & Tracking Analysis**\n\n"
                                     "I don't analyze internal tracking setups like Google Analytics, UTM parameters, or attribution models. "
@@ -214,23 +196,23 @@ async def websocket_endpoint(
                                     "type": "unsupported_query",
                                     "topic": "tracking_attribution"
                                 }
-                                }
-                            else:
-                                response = {
-                                    "content": "I can't analyze that specific aspect, but I can help with website optimization, competitor analysis, and conversion improvements. What would you like to explore?",
-                                    "metadata": {"type": "unsupported_query"}
-                                }
+                            }
+                        else:
+                            response = {
+                                "content": "I can't analyze that specific aspect, but I can help with website optimization, competitor analysis, and conversion improvements. What would you like to explore?",
+                                "metadata": {"type": "unsupported_query"}
+                            }
+                    
+                    elif intent["type"] == "analyze_domain":
+                        domain = intent["domain"]
+                        logger.info(f"Starting domain analysis for: {domain}")
                         
-                        elif intent["type"] == "analyze_domain":
-                            domain = intent["domain"]
-                            logger.info(f"Starting domain analysis for: {domain}")
-                            
-                            # Track analysis start
-                            Analytics.track_analysis(
-                                domain=domain,
-                                conversation_id=str(conversation.id),
-                                status="started"
-                            )
+                        # Track analysis start
+                        Analytics.track_analysis(
+                            domain=domain,
+                            conversation_id=str(conversation.id),
+                            status="started"
+                        )
                         
                         # Start analysis with streaming updates
                         async def update_callback(status: str, message: str, progress: int = None):
@@ -303,11 +285,11 @@ async def websocket_endpoint(
                             }
                         }
                         
-                        elif intent["type"] == "follow_up":
-                            # Use AI engine for follow-ups too
-                            from app.database import get_db_context
-                            async with get_db_context() as db:
-                                result = await db.execute(
+                    elif intent["type"] == "follow_up":
+                        # Use AI engine for follow-ups too
+                        from app.database import get_db_context
+                        async with get_db_context() as db:
+                            result = await db.execute(
                                 select(Analysis)
                                 .where(Analysis.conversation_id == conversation.id)
                                 .order_by(Analysis.started_at.desc())
