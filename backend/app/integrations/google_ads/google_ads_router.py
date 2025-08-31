@@ -66,9 +66,11 @@ async def oauth_callback(
         oauth_handler = GoogleAdsOAuthHandler()
         result = await oauth_handler.handle_callback(code, state)
         
+        # Get frontend URL once
+        frontend_url = settings.FRONTEND_URL
+        
         if result["success"]:
             # Redirect to frontend with success message
-            frontend_url = settings.FRONTEND_URL
             return RedirectResponse(
                 url=f"{frontend_url}?google_ads_connected=true&message=Google+Ads+connected+successfully"
             )
