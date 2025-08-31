@@ -21,12 +21,10 @@ class GoogleAdsChatHandler:
     
     def __init__(self):
         """Initialize handler components."""
-        self.enabled = is_integration_enabled("google_ads")
-        if self.enabled:
-            self.oauth_handler = GoogleAdsOAuthHandler()
-        else:
-            self.oauth_handler = None
-            logger.info("Google Ads integration disabled via feature flag")
+        # Temporarily always enable for testing
+        self.enabled = True  # is_integration_enabled("google_ads")
+        self.oauth_handler = GoogleAdsOAuthHandler()
+        logger.info("Google Ads chat handler initialized")
     
     async def process_message(
         self,
@@ -45,8 +43,9 @@ class GoogleAdsChatHandler:
         Returns:
             Response dict if Google Ads intent detected, None otherwise
         """
-        if not self.enabled:
-            return None
+        # Temporarily removed check for testing
+        # if not self.enabled:
+        #     return None
         
         # Detect Google Ads intent
         intent = GoogleAdsIntentDetector.detect_intent(message)
@@ -152,6 +151,12 @@ class GoogleAdsChatHandler:
     ) -> Dict[str, Any]:
         """Handle Google Ads data query."""
         try:
+            logger.info(f"Handling Google Ads query - session_id: {session_id}, query_type: {query_type}")
+            
+            # Check if credentials exist first
+            credentials = await self.oauth_handler.get_valid_credentials(session_id)
+            logger.info(f"Credentials exist for session {session_id}: {bool(credentials)}")
+            
             # Initialize NLP responder
             responder = GoogleAdsNLPResponder(session_id)
             

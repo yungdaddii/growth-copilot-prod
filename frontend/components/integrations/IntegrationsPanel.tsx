@@ -142,7 +142,7 @@ export function IntegrationsPanel({ isOpen, onClose }: IntegrationsPanelProps) {
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname)
         // Auto-open integrations panel to show success
-        if (!isOpen && onClose) {
+        if (!isOpen) {
           // Small delay to ensure component is ready
           setTimeout(() => {
             const event = new CustomEvent('openIntegrations')
@@ -175,7 +175,7 @@ export function IntegrationsPanel({ isOpen, onClose }: IntegrationsPanelProps) {
     }
 
     checkConnectionStatus()
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 

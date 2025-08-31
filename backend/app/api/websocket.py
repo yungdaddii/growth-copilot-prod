@@ -76,10 +76,14 @@ async def websocket_endpoint(
     # Use provided session_id or generate new one
     if not session_id:
         session_id = str(uuid4())
+        logger.warning(f"No session_id provided, generated new one: {session_id}")
+    else:
+        logger.info(f"WebSocket connected with session_id from client: {session_id}")
+    
     client_id = session_id  # Use session_id as client_id for consistency
     import sys
-    print(f"DEBUG: New WebSocket connection attempt: {client_id}", file=sys.stderr, flush=True)
-    logger.info(f"New WebSocket connection attempt: {client_id}")
+    print(f"DEBUG: WebSocket connection with session_id: {session_id}", file=sys.stderr, flush=True)
+    logger.info(f"WebSocket connection established - session_id: {session_id}, client_id: {client_id}")
     await manager.connect(websocket, client_id)
     
     # Initialize conversation and context-aware chat
@@ -177,12 +181,22 @@ async def websocket_endpoint(
                 if not handled_by_context:
                     # Check for Google Ads intent first
                     google_ads_response = None
+                    logger.info(f"Checking for Google Ads intent - session_id: {session_id}, message: {payload.content[:50]}...")
+                    
                     try:
                         from app.integrations import is_integration_enabled
-                        if is_integration_enabled("google_ads"):
+                        # Always check Google Ads (we removed the feature flag check)
+                        logger.info("Attempting to import Google Ads modules...")
+                        
+                        try:
                             from app.integrations.google_ads.google_ads_intent_detector import GoogleAdsIntentDetector
+                            logger.info("GoogleAdsIntentDetector imported successfully")
+                            
                             google_ads_intent = GoogleAdsIntentDetector.detect_intent(payload.content)
+                            logger.info(f"Google Ads intent detection result: {google_ads_intent}")
+                            
                             if google_ads_intent:
+                                logger.info(f"Google Ads intent detected! Processing with session_id: {session_id}")
                                 from app.integrations.google_ads.google_ads_chat_handler import GoogleAdsChatHandler
                                 handler = GoogleAdsChatHandler()
                                 google_ads_response = await handler.process_message(
@@ -190,8 +204,12 @@ async def websocket_endpoint(
                                     session_id,
                                     None
                                 )
+                                logger.info(f"Google Ads response generated: {bool(google_ads_response)}")
+                        except ImportError as ie:
+                            logger.error(f"Failed to import Google Ads modules: {ie}")
+                            
                     except Exception as e:
-                        logger.error(f"Google Ads integration error: {e}")
+                        logger.error(f"Google Ads integration error: {e}", exc_info=True)
                     
                     if google_ads_response:
                         response = google_ads_response
