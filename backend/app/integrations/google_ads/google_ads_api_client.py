@@ -59,12 +59,14 @@ class GoogleAdsAPIClient:
             creds_data = json.loads(creds_json)
             
             # Create Google Ads client configuration with OAuth2 credentials
+            # IMPORTANT: Do not pass client_id/secret separately when using OAuth2 credentials
             config = {
                 "developer_token": settings.GOOGLE_ADS_DEVELOPER_TOKEN,
-                "client_id": creds_data.get("client_id"),
-                "client_secret": creds_data.get("client_secret"),
                 "refresh_token": creds_data.get("refresh_token"),
+                "client_id": settings.GOOGLE_ADS_CLIENT_ID,  # Use from settings, not from stored creds
+                "client_secret": settings.GOOGLE_ADS_CLIENT_SECRET,  # Use from settings
                 "use_proto_plus": False,  # Disable proto-plus to avoid GRPC issues
+                "login_customer_id": None,  # Don't set unless using manager account
             }
             
             # Log config for debugging (without secrets)
@@ -93,11 +95,10 @@ class GoogleAdsAPIClient:
     async def _get_customer_id(self) -> Optional[str]:
         """Get the first accessible customer ID."""
         try:
-            customer_service = self.client.get_service("CustomerService")
+            customer_service = self.client.get_service("CustomerService", version="v17")
             
-            # List accessible customers doesn't require a customer ID
-            request = self.client.get_type("ListAccessibleCustomersRequest")
-            accessible_customers = customer_service.list_accessible_customers(request=request)
+            # List accessible customers - simpler call without request object
+            accessible_customers = customer_service.list_accessible_customers()
             
             if accessible_customers.resource_names:
                 # Extract customer ID from resource name (format: customers/1234567890)
@@ -110,9 +111,7 @@ class GoogleAdsAPIClient:
             
         except Exception as e:
             logger.error(f"Failed to get customer ID: {e}")
-            # Try a hardcoded test customer ID as fallback
-            # This is the Google Ads test account ID
-            self.customer_id = "1234567890"  # Will be replaced with actual ID
+            # Don't use fallback ID as it will cause more errors
             return None
     
     async def get_campaigns(self, limit: int = 50) -> List[Dict[str, Any]]:

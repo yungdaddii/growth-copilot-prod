@@ -9,7 +9,8 @@ from typing import Dict, List, Any, Optional
 import structlog
 from datetime import datetime
 
-# Use simple client to bypass GRPC issues
+# Try real API first, fallback to simple client
+from .google_ads_api_client import GoogleAdsAPIClient
 from .google_ads_simple_client import SimpleGoogleAdsClient
 
 logger = structlog.get_logger()
@@ -26,8 +27,10 @@ class GoogleAdsNLPResponder:
             session_id: User's session ID
         """
         self.session_id = session_id
-        # Use simple client instead of complex API client
-        self.api_client = SimpleGoogleAdsClient(session_id)
+        # Try to use real API client first
+        self.api_client = GoogleAdsAPIClient(session_id)
+        self.simple_client = SimpleGoogleAdsClient(session_id)
+        self.using_mock = False
     
     async def respond_to_query(self, query: str) -> Dict[str, Any]:
         """
@@ -110,7 +113,14 @@ This ${total_waste:,.2f} budget could be shifted to your converting keywords for
     async def analyze_performance(self) -> Dict[str, Any]:
         """Analyze overall account performance and trends."""
         try:
+            # Try real API first
             performance = await self.api_client.get_account_performance()
+            
+            # If real API fails, try mock data as fallback
+            if not performance:
+                logger.info("Real API returned no data, trying mock fallback")
+                performance = await self.simple_client.get_account_performance()
+                self.using_mock = True
             
             if not performance:
                 return {
