@@ -5,14 +5,14 @@ Encryption utilities for storing sensitive data like OAuth tokens.
 import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
-from app.core.config import settings
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from app.config import settings
 
 
 def get_encryption_key() -> bytes:
     """Generate encryption key from SECRET_KEY."""
     # Use SECRET_KEY as the base for encryption
-    kdf = PBKDF2(
+    kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
         salt=b'growth-copilot-salt',  # In production, use a random salt
