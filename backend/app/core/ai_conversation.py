@@ -42,14 +42,13 @@ class AIConversationEngine:
 ❌ WHAT WE DO NOT ANALYZE (Do not discuss these):
 - Attribution setup (GA4, GTM, UTM tracking)
 - Cross-domain tracking
-- Marketing automation integration
-- CRM connections
+- Marketing automation integration (except connected integrations)
+- CRM connections (except connected integrations)
 - Pixel tracking or conversion tracking
 - Multi-touch attribution models
 - Product analytics (Mixpanel, Amplitude)
-- Internal metrics or private data
+- Internal metrics or private data (except connected integrations)
 - Email marketing setup
-- Ad platform integrations
 
 CRITICAL RULES:
 1. ONLY discuss what's in our actual analysis data

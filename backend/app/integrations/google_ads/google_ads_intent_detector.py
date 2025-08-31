@@ -36,13 +36,18 @@ class GoogleAdsIntentDetector:
             r"no conversion"
         ],
         "performance": [
+            r"check.*ads",
             r"how are.*ads",
             r"ads performance",
+            r"ad performance",
             r"campaign performance",
+            r"google ads.*performance",
             r"google ads.*doing",
             r"ppc performance",
             r"ads metrics",
-            r"ads results"
+            r"ads results",
+            r"my.*ads.*performance",
+            r"check.*google ads"
         ],
         "campaigns": [
             r"show.*campaigns",
@@ -88,11 +93,17 @@ class GoogleAdsIntentDetector:
         """
         text_lower = text.lower()
         
-        # Check for explicit Google Ads mention
-        if not any(term in text_lower for term in ["google ads", "google ad", "adwords", "ppc", "campaigns"]):
-            # Also check for implicit ads context
-            if not any(term in text_lower for term in ["ads", "advertising", "keywords", "cpc", "cpa", "roas"]):
-                return None
+        # Check for explicit Google Ads mention (including "my google ads")
+        google_ads_terms = ["google ads", "google ad", "adwords", "ppc", "my ads", "my google ads", "my campaigns"]
+        has_google_ads = any(term in text_lower for term in google_ads_terms)
+        
+        # Also check for implicit ads context
+        ads_context_terms = ["ads performance", "ad performance", "advertising", "keywords", "cpc", "cpa", "roas", "campaign", "ad spend"]
+        has_ads_context = any(term in text_lower for term in ads_context_terms)
+        
+        # If no Google Ads or ads context, return None
+        if not has_google_ads and not has_ads_context:
+            return None
         
         # Check for connection intent
         for pattern in cls.CONNECT_PATTERNS:
