@@ -106,8 +106,14 @@ async def websocket_endpoint(
         while True:
             # Receive message from client
             data = await websocket.receive_text()
-            logger.info(f"Received message from {client_id}: {data}")
-            message_data = json.loads(data)
+            logger.info(f"📨 Received WebSocket message from {client_id}: {data[:100]}...")
+            
+            try:
+                message_data = json.loads(data)
+                logger.info(f"📦 Parsed message type: {message_data.get('type')}, has payload: {bool(message_data.get('payload'))}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse message as JSON: {e}")
+                continue
             
             # Track message received
             Analytics.track_websocket("message_received", client_id, {
@@ -115,8 +121,11 @@ async def websocket_endpoint(
             })
             
             # Handle different message types
+            logger.info(f"🔍 Processing message type: {message_data.get('type')}")
+            
             if message_data.get("type") == "chat":
                 payload = MessagePayload(**message_data.get("payload", {}))
+                logger.info(f"💬 Chat message content: {payload.content[:100]}...")
                 
                 # Create or get conversation
                 if not conversation:
@@ -153,7 +162,10 @@ async def websocket_endpoint(
                 
                 # Try context-aware processing first
                 handled_by_context = False
+                logger.info(f"🔄 Starting message processing for: {payload.content[:50]}...")
+                
                 try:
+                    logger.info("Attempting context-aware processing...")
                     from app.database import get_db_context
                     async with get_db_context() as db:
                         context_chat = ContextAwareChat(db)
