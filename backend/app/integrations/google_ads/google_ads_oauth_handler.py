@@ -26,8 +26,13 @@ logger = structlog.get_logger()
 class GoogleAdsOAuthHandler:
     """Handles OAuth 2.0 flow for Google Ads API."""
     
-    # Google Ads API scope
-    SCOPES = ['https://www.googleapis.com/auth/adwords']
+    # Google Ads API scope plus the scopes Google automatically adds
+    SCOPES = [
+        'https://www.googleapis.com/auth/adwords',
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+    ]
     
     # OAuth endpoints
     AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
@@ -149,8 +154,12 @@ class GoogleAdsOAuthHandler:
                 state=state
             )
             
-            flow.fetch_token(code=code)
+            # Fetch token - Google might add additional scopes
+            token = flow.fetch_token(code=code)
             credentials = flow.credentials
+            
+            # Log the actual scopes received
+            logger.info(f"OAuth successful with scopes: {credentials.scopes}")
             
             # Store credentials in Redis for now (simpler than database)
             credentials_data = {
