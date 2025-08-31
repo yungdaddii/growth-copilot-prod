@@ -70,10 +70,13 @@ manager = ConnectionManager()
 
 @router.websocket("/chat")
 async def websocket_endpoint(
-    websocket: WebSocket
+    websocket: WebSocket,
+    session_id: str = None
 ):
-    client_id = str(uuid4())
-    session_id = client_id  # Use client_id as session_id for context persistence
+    # Use provided session_id or generate new one
+    if not session_id:
+        session_id = str(uuid4())
+    client_id = session_id  # Use session_id as client_id for consistency
     import sys
     print(f"DEBUG: New WebSocket connection attempt: {client_id}", file=sys.stderr, flush=True)
     logger.info(f"New WebSocket connection attempt: {client_id}")

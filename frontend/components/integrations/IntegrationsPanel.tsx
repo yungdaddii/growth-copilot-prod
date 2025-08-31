@@ -87,28 +87,13 @@ export function IntegrationsPanel({ isOpen, onClose }: IntegrationsPanelProps) {
 
         if (response.ok) {
           const data = await response.json()
-          // Open OAuth window
-          window.open(data.auth_url, '_blank', 'width=600,height=700')
-          
-          // Poll for connection status
-          const checkInterval = setInterval(async () => {
-            const statusResponse = await fetch(`${apiUrl}/api/integrations/google-ads/status?session_id=${localStorage.getItem('session_id')}`)
-            const status = await statusResponse.json()
-            
-            if (status.connected) {
-              clearInterval(checkInterval)
-              setIntegrations(prev => prev.map(i => 
-                i.id === 'google-ads' ? { ...i, connected: true } : i
-              ))
-              setConnecting(null)
-            }
-          }, 2000)
-          
-          // Stop polling after 5 minutes
-          setTimeout(() => {
-            clearInterval(checkInterval)
-            setConnecting(null)
-          }, 300000)
+          // Save session_id before redirect
+          const sessionId = localStorage.getItem('session_id')
+          if (!sessionId) {
+            localStorage.setItem('session_id', crypto.randomUUID())
+          }
+          // Redirect in same window for better UX
+          window.location.href = data.auth_url
         }
       } catch (error) {
         console.error('Failed to connect:', error)
@@ -142,9 +127,30 @@ export function IntegrationsPanel({ isOpen, onClose }: IntegrationsPanelProps) {
     }
   }
 
-  // Check connection status on mount
+  // Check connection status on mount and handle OAuth callback
   useEffect(() => {
     const checkConnectionStatus = async () => {
+      // Check if we're returning from OAuth
+      const urlParams = new URLSearchParams(window.location.search)
+      const googleAdsConnected = urlParams.get('google_ads_connected')
+      
+      if (googleAdsConnected === 'true') {
+        // Update state to show connected
+        setIntegrations(prev => prev.map(i => 
+          i.id === 'google-ads' ? { ...i, connected: true } : i
+        ))
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname)
+        // Auto-open integrations panel to show success
+        if (!isOpen && onClose) {
+          // Small delay to ensure component is ready
+          setTimeout(() => {
+            const event = new CustomEvent('openIntegrations')
+            window.dispatchEvent(event)
+          }, 100)
+        }
+      }
+      
       const sessionId = localStorage.getItem('session_id')
       if (!sessionId) {
         const newSessionId = crypto.randomUUID()
@@ -169,7 +175,7 @@ export function IntegrationsPanel({ isOpen, onClose }: IntegrationsPanelProps) {
     }
 
     checkConnectionStatus()
-  }, [])
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 

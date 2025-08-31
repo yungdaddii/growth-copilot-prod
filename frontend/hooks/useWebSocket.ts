@@ -41,7 +41,17 @@ export function useWebSocket({
       return
     }
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/chat'
+    // Include session_id in WebSocket URL for Google Ads integration
+    const sessionId = typeof window !== 'undefined' 
+      ? (localStorage.getItem('session_id') || crypto.randomUUID())
+      : crypto.randomUUID()
+    
+    if (typeof window !== 'undefined' && !localStorage.getItem('session_id')) {
+      localStorage.setItem('session_id', sessionId)
+    }
+    
+    const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/chat'
+    const wsUrl = `${baseWsUrl}?session_id=${sessionId}`
     
     try {
       const ws = new WebSocket(wsUrl)
