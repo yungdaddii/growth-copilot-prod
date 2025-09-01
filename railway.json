@@ -4,7 +4,7 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile.railway",
     "buildArgs": {
-      "CACHEBUST": "v5.0-real-rest-api-2025-01-09"
+      "CACHEBUST": "v5.1-rest-api-v18-2025-01-09"
     }
   },
   "deploy": {

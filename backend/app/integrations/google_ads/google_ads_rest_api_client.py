@@ -21,7 +21,7 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     INTEGRATION_NAME = "google_ads"
     # Google Ads uses a different REST endpoint structure
     API_BASE_URL = "https://googleads.googleapis.com"
-    API_VERSION = "v17"  # Use v17 to match Google Ads API
+    API_VERSION = "v18"  # Use v18 (v17 is deprecated, v18+ has better REST support)
     SCOPES = [
         'https://www.googleapis.com/auth/adwords',
         'openid', 
@@ -139,6 +139,7 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
             # Google Ads REST API exists! Use GET method with custom verb
             url = f"{self.API_BASE_URL}/{self.API_VERSION}/customers:listAccessibleCustomers"
             logger.info(f"[REST API v5.0-REAL] Calling: GET {url}")
+            logger.info(f"[REST API v5.0-REAL] Developer token: {self.developer_token[:10] if self.developer_token else 'None'}...")
             
             headers = self.http_client.headers.copy()
             
@@ -151,6 +152,7 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
             )
             
             logger.info(f"[REST API v5.0-REAL] Response status: {response.status_code}")
+            logger.info(f"[REST API v5.0-REAL] Headers sent: {dict(headers)}")
             
             if response.status_code == 200:
                 data = response.json()
