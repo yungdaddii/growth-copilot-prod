@@ -56,7 +56,9 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     ) -> Optional[Dict]:
         """Override to handle Google Ads specific URL structure."""
         try:
-            logger.info(f"[Google Ads REST] make_api_request called with endpoint: {endpoint}")
+            logger.info(f"[Google Ads REST v2.2] make_api_request called")
+            logger.info(f"[Google Ads REST v2.2] Method: {method} (SHOULD BE POST)")
+            logger.info(f"[Google Ads REST v2.2] Endpoint: {endpoint}")
             
             if not self.http_client:
                 logger.error(f"[{self.INTEGRATION_NAME}] HTTP client not initialized")
@@ -124,9 +126,10 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     async def _get_customer_id(self) -> Optional[str]:
         """Get the first accessible customer ID."""
         try:
-            logger.info(f"[REST API] Getting customer ID for session: {self.session_id}")
-            logger.info(f"[REST API] Using developer token: {self.developer_token[:10]}...")
-            logger.info(f"[REST API] Has access token: {bool(self.access_token)}")
+            logger.info(f"[REST API v2.1-POST-FIX] Getting customer ID for session: {self.session_id}")
+            logger.info(f"[REST API v2.1-POST-FIX] Using developer token: {self.developer_token[:10]}...")
+            logger.info(f"[REST API v2.1-POST-FIX] Has access token: {bool(self.access_token)}")
+            logger.info(f"[REST API v2.1-POST-FIX] USING POST METHOD (not GET) for listAccessibleCustomers")
             
             # Google Ads REST API uses POST for listAccessibleCustomers, not GET!
             # This is different from most REST APIs
