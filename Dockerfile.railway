@@ -1,8 +1,5 @@
 FROM python:3.11-slim
 
-# Cache bust to force rebuild - UPDATE THIS TO FORCE NEW BUILD
-ENV CACHE_BUST=v2.2-FORCE-POST-METHOD-2025-01-09-B
-
 WORKDIR /app
 
 # Install minimal system dependencies
@@ -20,6 +17,12 @@ RUN pip install --no-cache-dir google-ads==24.1.0
 
 # Skip Playwright installation for Railway deployment
 # Screenshots will be disabled in production
+
+# CRITICAL: Cache bust AFTER pip install, BEFORE copying code
+# This ensures Railway copies fresh code
+ARG CACHEBUST=1
+ENV CACHE_BUST=${CACHEBUST}
+RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Copy the rest of the application
 COPY backend/ backend/
