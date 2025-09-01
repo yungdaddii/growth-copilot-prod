@@ -19,7 +19,8 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     """REST API client for Google Ads using the base integration architecture."""
     
     INTEGRATION_NAME = "google_ads"
-    API_BASE_URL = "https://googleads.googleapis.com/v17"
+    API_BASE_URL = "https://googleads.googleapis.com"
+    API_VERSION = "v17"
     SCOPES = [
         'https://www.googleapis.com/auth/adwords',
         'openid',
@@ -44,6 +45,63 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
             headers["Authorization"] = f"Bearer {self.access_token}"
             
         return headers
+    
+    async def make_api_request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict] = None,
+        params: Optional[Dict] = None
+    ) -> Optional[Dict]:
+        """Override to handle Google Ads specific URL structure."""
+        try:
+            if not self.http_client:
+                logger.error(f"[{self.INTEGRATION_NAME}] HTTP client not initialized")
+                return None
+            
+            # Google Ads API URLs need version in the path
+            # Format: https://googleads.googleapis.com/v17/customers:listAccessibleCustomers
+            if not endpoint.startswith("/"):
+                endpoint = f"/{endpoint}"
+            
+            # Add version if not already in endpoint
+            if not endpoint.startswith(f"/{self.API_VERSION}"):
+                endpoint = f"/{self.API_VERSION}{endpoint}"
+                
+            url = f"{self.API_BASE_URL}{endpoint}"
+            
+            logger.info(f"[{self.INTEGRATION_NAME}] Making {method} request to: {url}")
+            
+            # Add login-customer-id header if we have a customer ID (needed for some calls)
+            headers = self.http_client.headers.copy()
+            if hasattr(self, 'customer_id') and self.customer_id and 'listAccessibleCustomers' not in endpoint:
+                headers['login-customer-id'] = str(self.customer_id)
+                logger.info(f"[{self.INTEGRATION_NAME}] Added login-customer-id header: {self.customer_id}")
+            
+            response = await self.http_client.request(
+                method=method,
+                url=url,
+                json=json_data,
+                params=params,
+                headers=headers
+            )
+            
+            logger.info(f"[{self.INTEGRATION_NAME}] Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"[{self.INTEGRATION_NAME}] ✅ API request successful")
+                return data
+            else:
+                logger.error(f"[{self.INTEGRATION_NAME}] ❌ API request failed: {response.status_code}")
+                logger.error(f"[{self.INTEGRATION_NAME}] Response body: {response.text[:500]}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"[{self.INTEGRATION_NAME}] API request error: {e}")
+            import traceback
+            logger.error(f"[{self.INTEGRATION_NAME}] Traceback: {traceback.format_exc()}")
+            return None
     
     async def _custom_initialize(self) -> bool:
         """Google Ads specific initialization - get customer ID."""
