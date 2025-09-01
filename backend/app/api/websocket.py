@@ -202,13 +202,14 @@ async def websocket_endpoint(
                         
                         try:
                             from app.integrations.google_ads.google_ads_intent_detector import GoogleAdsIntentDetector
-                            logger.info("GoogleAdsIntentDetector imported successfully")
+                            logger.info(f"[WebSocket] GoogleAdsIntentDetector imported. Session: {session_id}, Client: {client_id}")
                             
                             google_ads_intent = GoogleAdsIntentDetector.detect_intent(payload.content)
-                            logger.info(f"Google Ads intent detection result: {google_ads_intent}")
+                            logger.info(f"[WebSocket] Google Ads intent result: {google_ads_intent}")
                             
                             if google_ads_intent:
-                                logger.info(f"Google Ads intent detected! Processing with session_id: {session_id}")
+                                logger.info(f"[WebSocket] ✅ Google Ads intent type: {google_ads_intent.get('type')}")
+                                logger.info(f"[WebSocket] Using session_id: {session_id} for Google Ads processing")
                                 from app.integrations.google_ads.google_ads_chat_handler import GoogleAdsChatHandler
                                 handler = GoogleAdsChatHandler()
                                 google_ads_response = await handler.process_message(
@@ -216,7 +217,7 @@ async def websocket_endpoint(
                                     session_id,
                                     None
                                 )
-                                logger.info(f"Google Ads response generated: {bool(google_ads_response)}")
+                                logger.info(f"[WebSocket] Google Ads response generated: {bool(google_ads_response)}")
                         except ImportError as ie:
                             logger.error(f"Failed to import Google Ads modules: {ie}")
                             

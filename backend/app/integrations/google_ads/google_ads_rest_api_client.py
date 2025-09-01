@@ -63,23 +63,31 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     async def _get_customer_id(self) -> Optional[str]:
         """Get the first accessible customer ID."""
         try:
+            logger.info(f"[REST API] Getting customer ID for session: {self.session_id}")
+            logger.info(f"[REST API] Using developer token: {self.developer_token[:10]}...")
+            logger.info(f"[REST API] Has access token: {bool(self.access_token)}")
+            
             response = await self.make_api_request(
                 method="GET",
                 endpoint="customers:listAccessibleCustomers"
             )
             
+            logger.info(f"[REST API] ListAccessibleCustomers response: {response}")
+            
             if response and response.get("resourceNames"):
                 # Extract customer ID from first resource name
                 # Format: customers/1234567890
                 customer_id = response["resourceNames"][0].split("/")[1]
-                logger.info(f"Found Google Ads customer ID: {customer_id}")
+                logger.info(f"[REST API] ✅ Found Google Ads customer ID: {customer_id}")
                 return customer_id
                 
-            logger.warning("No accessible Google Ads customers found")
+            logger.warning("[REST API] No accessible Google Ads customers found - user may not have any ad accounts")
             return None
             
         except Exception as e:
-            logger.error(f"Failed to get customer ID: {e}")
+            logger.error(f"[REST API] Failed to get customer ID: {e}")
+            import traceback
+            logger.error(f"[REST API] Traceback: {traceback.format_exc()}")
             return None
     
     async def get_account_info(self) -> Dict[str, Any]:

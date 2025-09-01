@@ -71,24 +71,42 @@ class BaseIntegrationClient(ABC):
         try:
             redis = await get_redis()
             if not redis:
+                logger.error(f"[{self.INTEGRATION_NAME}] Redis not available for credential retrieval")
                 return None
             
             key = f"{self.INTEGRATION_NAME}:credentials:{self.session_id}"
+            logger.info(f"[{self.INTEGRATION_NAME}] Looking for credentials with key: {key}")
+            
+            # Debug: List all related keys
+            all_keys = await redis.keys(f"{self.INTEGRATION_NAME}:credentials:*")
+            if all_keys:
+                logger.info(f"[{self.INTEGRATION_NAME}] Found {len(all_keys)} credential keys in Redis")
+                for k in all_keys[:3]:  # Show first 3
+                    key_str = k.decode() if isinstance(k, bytes) else k
+                    logger.info(f"  - {key_str}")
+            
             creds_json = await redis.get(key)
             
             if creds_json:
-                return json.loads(creds_json)
+                creds = json.loads(creds_json)
+                logger.info(f"[{self.INTEGRATION_NAME}] ✅ Found credentials for session {self.session_id}")
+                logger.info(f"  - Has refresh token: {bool(creds.get('refresh_token'))}")
+                return creds
             
             # Also check for OAuth completion marker
             oauth_marker = await redis.get(f"{self.INTEGRATION_NAME}:oauth_complete:{self.session_id}")
             if oauth_marker:
+                logger.info(f"[{self.INTEGRATION_NAME}] Found OAuth marker but no full credentials")
                 # Return minimal credentials to indicate connection
                 return {"connected": True}
-                
+            
+            logger.warning(f"[{self.INTEGRATION_NAME}] No credentials found for session {self.session_id}")
             return None
             
         except Exception as e:
-            logger.error(f"Failed to get credentials: {e}")
+            logger.error(f"[{self.INTEGRATION_NAME}] Failed to get credentials: {e}")
+            import traceback
+            logger.error(f"[{self.INTEGRATION_NAME}] Traceback: {traceback.format_exc()}")
             return None
     
     async def _ensure_valid_token(self) -> Optional[str]:
@@ -184,10 +202,15 @@ class BaseIntegrationClient(ABC):
         """Make an API request with authentication."""
         try:
             if not self.http_client:
-                logger.error("HTTP client not initialized")
+                logger.error(f"[{self.INTEGRATION_NAME}] HTTP client not initialized")
                 return None
             
             url = f"{self.API_BASE_URL}/{endpoint}"
+            
+            logger.info(f"[{self.INTEGRATION_NAME}] Making {method} request to: {url}")
+            logger.info(f"[{self.INTEGRATION_NAME}] Headers: {self._get_default_headers()}")
+            if json_data:
+                logger.info(f"[{self.INTEGRATION_NAME}] Body: {json_data}")
             
             response = await self.http_client.request(
                 method=method,
@@ -196,14 +219,21 @@ class BaseIntegrationClient(ABC):
                 params=params
             )
             
+            logger.info(f"[{self.INTEGRATION_NAME}] Response status: {response.status_code}")
+            
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                logger.info(f"[{self.INTEGRATION_NAME}] ✅ API request successful")
+                return data
             else:
-                logger.error(f"API request failed: {response.status_code} - {response.text}")
+                logger.error(f"[{self.INTEGRATION_NAME}] ❌ API request failed: {response.status_code}")
+                logger.error(f"[{self.INTEGRATION_NAME}] Response body: {response.text}")
                 return None
                 
         except Exception as e:
-            logger.error(f"API request error: {e}")
+            logger.error(f"[{self.INTEGRATION_NAME}] API request error: {e}")
+            import traceback
+            logger.error(f"[{self.INTEGRATION_NAME}] Traceback: {traceback.format_exc()}")
             return None
     
     async def has_valid_connection(self) -> bool:
