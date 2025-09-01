@@ -37,7 +37,9 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting Keelo.ai", version=settings.APP_VERSION)
+    deployment_version = "v2.1-POST-FIX-2024-01-09"
+    logger.info("Starting Keelo.ai", version=settings.APP_VERSION, deployment=deployment_version)
+    logger.info("Google Ads API Fix: Using POST for listAccessibleCustomers")
     
     # Initialize Redis
     await init_redis()
@@ -129,5 +131,7 @@ async def root():
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
+        "deployment": "v2.1-POST-FIX-2024-01-09",
+        "google_ads_fix": "POST method for listAccessibleCustomers", 
         "message": "AI that finds hidden revenue in 60 seconds"
     }
