@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Cache bust to force rebuild - UPDATE THIS TO FORCE NEW BUILD
+ENV CACHE_BUST=v2.1-POST-FIX-2025-01-09
+
 WORKDIR /app
 
 # Install minimal system dependencies
@@ -11,6 +14,9 @@ RUN apt-get update && apt-get install -y \
 # Copy backend files - use production requirements without Playwright
 COPY backend/requirements.prod.txt backend/requirements.prod.txt
 RUN pip install --no-cache-dir -r backend/requirements.prod.txt
+
+# Explicitly ensure google-ads is installed (critical for integration)
+RUN pip install --no-cache-dir google-ads==24.1.0
 
 # Skip Playwright installation for Railway deployment
 # Screenshots will be disabled in production
