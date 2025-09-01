@@ -21,7 +21,7 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     INTEGRATION_NAME = "google_ads"
     # Google Ads uses a different REST endpoint structure
     API_BASE_URL = "https://googleads.googleapis.com"
-    API_VERSION = "v18"  # Try v18, the latest stable version
+    API_VERSION = "v17"  # Use v17 to match Google Ads API
     SCOPES = [
         'https://www.googleapis.com/auth/adwords',
         'openid', 
