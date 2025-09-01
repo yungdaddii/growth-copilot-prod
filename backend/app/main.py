@@ -37,7 +37,7 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    deployment_version = "v3.1-NO-GRPC-V17"
+    deployment_version = "v3.2-DIRECT-API-CALLS"
     logger.info("Starting Keelo.ai", version=settings.APP_VERSION, deployment=deployment_version)
     logger.info("Google Ads API Fix: Using POST for listAccessibleCustomers")
     logger.info("Docker cache issue fixed - fresh code deployed")
@@ -132,8 +132,8 @@ async def root():
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "deployment": "v3.1-NO-GRPC-V17",
-        "google_ads_fix": "POST method, v17 API, no GRPC",
+        "deployment": "v3.2-DIRECT-API-CALLS",
+        "google_ads_fix": "Direct API calls bypass override issues",
         "docker_fix": "Cache layer issue resolved", 
         "message": "AI that finds hidden revenue in 60 seconds"
     }

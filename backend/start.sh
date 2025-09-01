@@ -1,8 +1,8 @@
 #!/bin/sh
 echo "=========================================="
 echo "=== Starting Growth Copilot Backend ==="
-echo "=== DEPLOYMENT: v2.1-POST-FIX ==="
-echo "=== Google Ads Fix: POST for listAccessibleCustomers ==="
+echo "=== DEPLOYMENT: v3.2-DIRECT-API-CALLS ==="
+echo "=== Google Ads Fix: Direct API calls, bypass override issues ==="
 echo "=========================================="
 echo "Python version:"
 python --version

@@ -126,18 +126,46 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     async def _get_customer_id(self) -> Optional[str]:
         """Get the first accessible customer ID."""
         try:
-            logger.info(f"[REST API v2.1-POST-FIX] Getting customer ID for session: {self.session_id}")
-            logger.info(f"[REST API v2.1-POST-FIX] Using developer token: {self.developer_token[:10]}...")
-            logger.info(f"[REST API v2.1-POST-FIX] Has access token: {bool(self.access_token)}")
-            logger.info(f"[REST API v2.1-POST-FIX] USING POST METHOD (not GET) for listAccessibleCustomers")
+            logger.info(f"[REST API v3.0-DIRECT] Getting customer ID for session: {self.session_id}")
+            logger.info(f"[REST API v3.0-DIRECT] Using developer token: {self.developer_token[:10]}...")
+            logger.info(f"[REST API v3.0-DIRECT] Has access token: {bool(self.access_token)}")
+            logger.info(f"[REST API v3.0-DIRECT] USING POST METHOD for listAccessibleCustomers")
             
-            # Google Ads REST API uses POST for listAccessibleCustomers, not GET!
-            # This is different from most REST APIs
-            response = await self.make_api_request(
-                method="POST",  # Changed from GET to POST
-                endpoint="customers:listAccessibleCustomers",
-                json_data={}  # Empty body for this request
+            # DIRECTLY make the API call without using make_api_request to avoid override issues
+            if not self.http_client:
+                logger.error("[REST API] HTTP client not initialized")
+                return None
+                
+            url = f"{self.API_BASE_URL}/{self.API_VERSION}/customers:listAccessibleCustomers"
+            logger.info(f"[REST API v3.0-DIRECT] Calling: POST {url}")
+            
+            headers = self.http_client.headers.copy()
+            response = await self.http_client.request(
+                method="POST",
+                url=url,
+                json={},
+                headers=headers
             )
+            
+            logger.info(f"[REST API v3.0-DIRECT] Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"[REST API v3.0-DIRECT] Response data: {data}")
+            else:
+                logger.error(f"[REST API v3.0-DIRECT] Failed with status {response.status_code}")
+                logger.error(f"[REST API v3.0-DIRECT] Response: {response.text[:500]}")
+                return None
+            
+            # OLD CODE using make_api_request (which fails on Railway):
+            # response = await self.make_api_request(
+            #     method="POST",
+            #     endpoint="customers:listAccessibleCustomers",
+            #     json_data={}
+            # )
+            # NEW CODE: Direct API call above
+            
+            response = data if response.status_code == 200 else None
             
             logger.info(f"[REST API] ListAccessibleCustomers response: {response}")
             
