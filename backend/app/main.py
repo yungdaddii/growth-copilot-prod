@@ -131,24 +131,7 @@ async def root():
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "deployment": "v2.3-FORCE-CLEAN-BUILD",
-        "google_ads_fix": "POST method for listAccessibleCustomers",
-        "code_version": "2025-01-09-20:30",
+        "deployment": "v2.1-POST-FIX-2024-01-09",
+        "google_ads_fix": "POST method for listAccessibleCustomers", 
         "message": "AI that finds hidden revenue in 60 seconds"
-    }
-
-@app.get("/debug/google-ads")
-async def debug_google_ads():
-    """Debug endpoint to check if Google Ads code is updated."""
-    from app.integrations.google_ads.google_ads_rest_api_client import GoogleAdsRESTAPIClient
-    
-    # Check what version of the code is loaded
-    import inspect
-    source = inspect.getsource(GoogleAdsRESTAPIClient.make_api_request)
-    
-    return {
-        "api_version": GoogleAdsRESTAPIClient.API_VERSION,
-        "has_v22_logging": "v2.2" in source,
-        "method_first_line": source.split('\n')[0],
-        "deployment": "v2.3-FORCE-CLEAN-BUILD"
     }
