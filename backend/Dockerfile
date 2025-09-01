@@ -50,6 +50,9 @@ RUN playwright install chromium
 # Copy application code
 COPY . .
 
+# Make startup script executable
+RUN chmod +x scripts/startup.sh || true
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
@@ -57,5 +60,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Default command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use startup script that runs migrations first
+CMD ["bash", "scripts/startup.sh"]

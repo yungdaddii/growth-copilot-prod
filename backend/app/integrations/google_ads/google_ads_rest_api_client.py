@@ -19,11 +19,12 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     """REST API client for Google Ads using the base integration architecture."""
     
     INTEGRATION_NAME = "google_ads"
+    # Google Ads uses a different REST endpoint structure
     API_BASE_URL = "https://googleads.googleapis.com"
-    API_VERSION = "v17"
+    API_VERSION = "v18"  # Try v18, the latest stable version
     SCOPES = [
         'https://www.googleapis.com/auth/adwords',
-        'openid',
+        'openid', 
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile'
     ]
@@ -55,22 +56,24 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     ) -> Optional[Dict]:
         """Override to handle Google Ads specific URL structure."""
         try:
+            logger.info(f"[Google Ads REST] make_api_request called with endpoint: {endpoint}")
+            
             if not self.http_client:
                 logger.error(f"[{self.INTEGRATION_NAME}] HTTP client not initialized")
                 return None
             
-            # Google Ads API URLs need version in the path
-            # Format: https://googleads.googleapis.com/v17/customers:listAccessibleCustomers
-            if not endpoint.startswith("/"):
-                endpoint = f"/{endpoint}"
+            # Google Ads API URLs need special handling
+            # For listAccessibleCustomers: /v17/customers:listAccessibleCustomers
+            # For specific customer: /v17/customers/{customer_id}
             
-            # Add version if not already in endpoint
-            if not endpoint.startswith(f"/{self.API_VERSION}"):
-                endpoint = f"/{self.API_VERSION}{endpoint}"
-                
-            url = f"{self.API_BASE_URL}{endpoint}"
+            # Remove leading slash if present
+            if endpoint.startswith("/"):
+                endpoint = endpoint[1:]
             
-            logger.info(f"[{self.INTEGRATION_NAME}] Making {method} request to: {url}")
+            # Build the complete URL
+            url = f"{self.API_BASE_URL}/{self.API_VERSION}/{endpoint}"
+            
+            logger.info(f"[Google Ads REST] Final URL: {url}")
             
             # Add login-customer-id header if we have a customer ID (needed for some calls)
             headers = self.http_client.headers.copy()
