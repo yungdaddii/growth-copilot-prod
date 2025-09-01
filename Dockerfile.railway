@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 # Cache bust to force rebuild - UPDATE THIS TO FORCE NEW BUILD
-ENV CACHE_BUST=v2.2-FORCE-POST-METHOD-2025-01-09-B
+ENV CACHE_BUST=v2.3-CLEAN-PYCS-2025-01-09-2030
 
 WORKDIR /app
 
@@ -23,6 +23,10 @@ RUN pip install --no-cache-dir google-ads==24.1.0
 
 # Copy the rest of the application
 COPY backend/ backend/
+
+# Remove any cached Python files to force fresh import
+RUN find /app/backend -type f -name "*.pyc" -delete
+RUN find /app/backend -type d -name "__pycache__" -delete
 
 WORKDIR /app/backend
 
