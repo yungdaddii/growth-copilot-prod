@@ -48,9 +48,14 @@ class BaseIntegrationClient(ABC):
                 logger.error(f"Failed to get access token for {self.INTEGRATION_NAME}")
                 return False
             
+            logger.info(f"[{self.INTEGRATION_NAME}] Access token obtained: {self.access_token[:20]}...")
+            
             # Initialize HTTP client with default headers
+            headers = self._get_default_headers()
+            logger.info(f"[{self.INTEGRATION_NAME}] Default headers: {headers}")
+            
             self.http_client = httpx.AsyncClient(
-                headers=self._get_default_headers(),
+                headers=headers,
                 timeout=30.0
             )
             
@@ -113,13 +118,20 @@ class BaseIntegrationClient(ABC):
         """Get valid access token, refreshing if needed."""
         try:
             if not self.credentials:
+                logger.error(f"[{self.INTEGRATION_NAME}] No credentials available for token validation")
                 return None
             
             # Check if we have a valid token
             if self.credentials.get("token") and self.credentials.get("expiry"):
                 expiry = datetime.fromisoformat(self.credentials["expiry"])
-                if expiry > datetime.utcnow():
+                now = datetime.utcnow()
+                
+                # Add 5 minute buffer before expiry
+                if expiry > (now + timedelta(minutes=5)):
+                    logger.info(f"[{self.INTEGRATION_NAME}] Token valid until {expiry}")
                     return self.credentials["token"]
+                else:
+                    logger.info(f"[{self.INTEGRATION_NAME}] Token expired or expiring soon, refreshing...")
             
             # Refresh the token
             return await self._refresh_token()
@@ -159,6 +171,8 @@ class BaseIntegrationClient(ABC):
                     token_data = response.json()
                     new_token = token_data.get("access_token")
                     
+                    logger.info(f"[{self.INTEGRATION_NAME}] Token refreshed successfully")
+                    
                     # Update stored credentials
                     self.credentials["token"] = new_token
                     self.credentials["expiry"] = (
@@ -168,7 +182,7 @@ class BaseIntegrationClient(ABC):
                     # Save updated credentials
                     await self._save_credentials(self.credentials)
                     
-                    logger.info(f"Refreshed token for {self.INTEGRATION_NAME}")
+                    logger.info(f"[{self.INTEGRATION_NAME}] ✅ New token saved, expires in {token_data.get('expires_in', 3600)} seconds")
                     return new_token
                 else:
                     logger.error(f"Token refresh failed: {response.status_code}")

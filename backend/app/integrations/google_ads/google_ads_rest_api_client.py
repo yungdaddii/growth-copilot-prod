@@ -128,9 +128,12 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
             logger.info(f"[REST API] Using developer token: {self.developer_token[:10]}...")
             logger.info(f"[REST API] Has access token: {bool(self.access_token)}")
             
+            # Google Ads REST API uses POST for listAccessibleCustomers, not GET!
+            # This is different from most REST APIs
             response = await self.make_api_request(
-                method="GET",
-                endpoint="customers:listAccessibleCustomers"
+                method="POST",  # Changed from GET to POST
+                endpoint="customers:listAccessibleCustomers",
+                json_data={}  # Empty body for this request
             )
             
             logger.info(f"[REST API] ListAccessibleCustomers response: {response}")
@@ -161,18 +164,27 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
             }
         
         try:
-            response = await self.make_api_request(
-                method="GET",
-                endpoint=f"customers/{self.customer_id}"
-            )
+            # Google Ads doesn't have a simple GET endpoint for customer info
+            # We need to use a search query instead
+            query = f"""
+                SELECT
+                    customer.descriptive_name,
+                    customer.currency_code,
+                    customer.id
+                FROM customer
+                LIMIT 1
+            """
             
-            if response:
+            response = await self.search_stream(query)
+            
+            if response and len(response) > 0:
+                customer_data = response[0].get("customer", {})
                 return {
                     "connected": True,
                     "has_accounts": True,
                     "customer_id": self.customer_id,
-                    "account_name": response.get("descriptiveName", "Unknown"),
-                    "currency": response.get("currencyCode", "USD")
+                    "account_name": customer_data.get("descriptiveName", "Unknown"),
+                    "currency": customer_data.get("currencyCode", "USD")
                 }
             
         except Exception as e:
@@ -187,12 +199,13 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
     async def search_stream(self, query: str) -> List[Dict[str, Any]]:
         """Execute a Google Ads Query Language query."""
         if not self.customer_id:
-            logger.warning("No customer ID available for search")
+            logger.warning("[REST API] No customer ID available for search")
             return []
         
         try:
+            logger.info(f"[REST API] Executing search query for customer {self.customer_id}")
             response = await self.make_api_request(
-                method="POST",
+                method="POST",  # Google Ads uses POST for search
                 endpoint=f"customers/{self.customer_id}/googleAds:searchStream",
                 json_data={"query": query}
             )
