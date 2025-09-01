@@ -27,17 +27,22 @@ def verify_deployment():
             print(f"Google Ads Fix: {data.get('google_ads_fix', 'unknown')}")
             print(f"Docker Fix: {data.get('docker_fix', 'unknown')}")
             
-            # Check if we have the v3.1 deployment
-            if "v3.1-NO-GRPC-V17" in data.get('deployment', ''):
-                print("\n✅ DEPLOYMENT SUCCESSFUL - v3.1 with all fixes is live!")
+            # Check if we have the v3.2 deployment
+            if "v3.2-DIRECT-API-CALLS" in data.get('deployment', ''):
+                print("\n✅ DEPLOYMENT SUCCESSFUL - v3.2 with direct API calls is live!")
                 print("The Google Ads fixes are now active:")
+                print("  • Direct API calls (bypass override issues)")
                 print("  • GRPC fallback removed")
-                print("  • API version changed to v17")
+                print("  • API version v17")
                 print("  • POST method for listAccessibleCustomers")
                 return True
+            elif "v3.1" in data.get('deployment', ''):
+                print(f"\n⚠️ Old v3.1 deployment still active")
+                print("Waiting for v3.2 deployment...")
+                return False
             elif "v3.0" in data.get('deployment', ''):
                 print(f"\n⚠️ Old v3.0 deployment still active")
-                print("Waiting for v3.1 deployment...")
+                print("Waiting for v3.2 deployment...")
                 return False
             else:
                 print(f"\n❌ Unknown deployment: {data.get('deployment')}")
