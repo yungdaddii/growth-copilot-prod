@@ -24,6 +24,7 @@ firebase-admin==6.5.0  # Firebase Authentication
 pydantic==2.5.2
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
+email-validator==2.1.0  # Required for EmailStr in auth schemas
 beautifulsoup4==4.12.3
 lxml==4.9.3
 Pillow==10.1.0
