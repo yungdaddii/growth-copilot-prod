@@ -47,6 +47,12 @@ export default function Home() {
   })
 
   const handleSendMessage = () => {
+    console.log('handleSendMessage called', { 
+      message: message.trim(), 
+      connectionStatus,
+      canSend: message.trim() && connectionStatus === 'connected'
+    })
+    
     if (message.trim() && connectionStatus === 'connected') {
       addMessage({
         id: crypto.randomUUID(),
@@ -62,6 +68,9 @@ export default function Home() {
       
       setMessage('')
       setIsTyping(true)
+    } else if (message.trim() && connectionStatus !== 'connected') {
+      console.error('Cannot send message: WebSocket not connected', { connectionStatus })
+      alert(`Cannot send message: WebSocket is ${connectionStatus}. Please refresh the page.`)
     }
   }
 
@@ -693,14 +702,39 @@ export default function Home() {
               </button>
             )}
           </div>
-          <p style={{
+          <div style={{
             textAlign: 'center',
-            fontSize: '12px',
-            color: 'rgba(255,255,255,0.5)',
-            marginTop: '8px'
+            marginTop: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px'
           }}>
-            Keelo.ai can analyze websites and provide insights that may be inaccurate.
-          </p>
+            <p style={{
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.5)',
+            }}>
+              Keelo.ai can analyze websites and provide insights that may be inaccurate.
+            </p>
+            <div style={{
+              fontSize: '11px',
+              color: connectionStatus === 'connected' ? '#22c55e' : 
+                     connectionStatus === 'connecting' ? '#f59e0b' : '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: connectionStatus === 'connected' ? '#22c55e' : 
+                               connectionStatus === 'connecting' ? '#f59e0b' : '#ef4444',
+                display: 'inline-block'
+              }} />
+              WebSocket: {connectionStatus}
+            </div>
+          </div>
         </div>
       </div>
       

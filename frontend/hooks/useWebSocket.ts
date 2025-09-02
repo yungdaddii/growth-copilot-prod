@@ -65,6 +65,8 @@ export function useWebSocket({
       }
     }
     
+    console.log('Attempting WebSocket connection to:', wsUrl.replace(/token=.*/, 'token=***'))
+    
     try {
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
