@@ -35,15 +35,30 @@ class GoogleAdsRESTAPIClient(BaseIntegrationClient):
         self.customer_id = None
         self.developer_token = settings.GOOGLE_ADS_DEVELOPER_TOKEN
         
+        # Log credential status for debugging
+        if not self.developer_token:
+            logger.warning("[Google Ads] No developer token configured - set GOOGLE_ADS_DEVELOPER_TOKEN")
+        if not settings.GOOGLE_ADS_CLIENT_ID:
+            logger.warning("[Google Ads] No client ID configured - set GOOGLE_ADS_CLIENT_ID")
+        if not settings.GOOGLE_ADS_CLIENT_SECRET:
+            logger.warning("[Google Ads] No client secret configured - set GOOGLE_ADS_CLIENT_SECRET")
+        
     def _get_default_headers(self) -> Dict[str, str]:
         """Get headers required for Google Ads API."""
         headers = {
-            "Content-Type": "application/json",
-            "developer-token": self.developer_token
+            "Content-Type": "application/json"
         }
+        
+        # Only add developer token if it exists
+        if self.developer_token:
+            headers["developer-token"] = self.developer_token
+        else:
+            logger.warning("[Google Ads] No developer token in headers")
         
         if self.access_token:
             headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+            logger.warning("[Google Ads] No access token in headers")
             
         return headers
     
