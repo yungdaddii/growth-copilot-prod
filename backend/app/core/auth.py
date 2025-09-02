@@ -81,10 +81,13 @@ class FirebaseAuth:
     
     @staticmethod
     async def get_current_user(
-        token: Dict[str, Any] = Depends(verify_token),
+        credentials: HTTPAuthorizationCredentials = Depends(security),
         db: Session = Depends(get_db)
     ) -> User:
         """Get current user from database or create if not exists."""
+        # First verify the token
+        token = await FirebaseAuth.verify_token(credentials)
+        
         firebase_uid = token.get("uid")
         email = token.get("email")
         
@@ -140,9 +143,52 @@ class FirebaseAuth:
             return None
         
         try:
+            # Verify token and get user
             token = await FirebaseAuth.verify_token(credentials)
-            return await FirebaseAuth.get_current_user(token, db)
+            
+            firebase_uid = token.get("uid")
+            email = token.get("email")
+            
+            if not firebase_uid or not email:
+                return None
+            
+            # Get or create user
+            user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+            
+            if not user:
+                # Create new user
+                user = User(
+                    firebase_uid=firebase_uid,
+                    email=email,
+                    display_name=token.get("name"),
+                    photo_url=token.get("picture"),
+                    email_verified=token.get("email_verified", False),
+                    subscription_tier=SubscriptionTier.FREE,
+                    subscription_status=SubscriptionStatus.ACTIVE,
+                    monthly_analyses_limit=10,
+                    monthly_analyses_used=0,
+                    can_use_ai_chat=True,
+                    can_export_data=False,
+                    can_use_api=False,
+                    email_notifications=True,
+                    weekly_report=True,
+                    is_active=True,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    last_login_at=datetime.utcnow()
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            else:
+                # Update last login
+                user.last_login_at = datetime.utcnow()
+                db.commit()
+            
+            return user
         except HTTPException:
+            return None
+        except Exception:
             return None
     
     @staticmethod
