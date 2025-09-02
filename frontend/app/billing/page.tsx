@@ -365,7 +365,7 @@ export default function BillingPage() {
               )}
               {usagePercentage < 80 && (
                 <span>
-                  {profile?.monthlyAnalysesLimit - profile?.monthlyAnalysesUsed || 10} analyses remaining this month
+                  {(profile?.monthlyAnalysesLimit || 10) - (profile?.monthlyAnalysesUsed || 0)} analyses remaining this month
                 </span>
               )}
             </div>

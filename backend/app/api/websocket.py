@@ -86,11 +86,11 @@ async def websocket_endpoint(
     user: Optional[User] = None
     if token and USER_MODEL_AVAILABLE:
         try:
-            from app.core.auth import FirebaseAuth
+            from firebase_admin import auth as firebase_auth
             from app.database import get_db_context
             
-            # Verify Firebase token
-            decoded_token = await FirebaseAuth.verify_token(token)
+            # Verify Firebase token directly
+            decoded_token = firebase_auth.verify_id_token(token)
             firebase_uid = decoded_token.get("uid")
             
             # Get user from database
