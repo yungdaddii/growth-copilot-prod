@@ -44,8 +44,8 @@ RUN if [ -f requirements.prod.txt ]; then \
 # Explicitly ensure google-ads is installed
 RUN pip install --no-cache-dir google-ads==24.1.0
 
-# Install Playwright browsers (as root before switching users)
-RUN playwright install chromium
+# Install Playwright and then browsers (as root before switching users)
+RUN pip install playwright && playwright install chromium
 
 # Copy application code
 COPY . .

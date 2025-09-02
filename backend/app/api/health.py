@@ -3,9 +3,15 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 import os
-import firebase_admin
-from firebase_admin import auth as firebase_auth
 import logging
+
+# Try to import firebase_admin, but don't fail if it's not available
+try:
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth
+    FIREBASE_AVAILABLE = True
+except ImportError:
+    FIREBASE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +27,14 @@ async def health_check() -> Dict[str, str]:
 @router.get("/health/firebase")
 async def firebase_status() -> Dict[str, Any]:
     """Check Firebase Admin SDK initialization status."""
+    if not FIREBASE_AVAILABLE:
+        return {
+            "status": "error",
+            "initialized": False,
+            "error": "firebase_admin module not installed",
+            "recommendation": "Install firebase-admin package: pip install firebase-admin"
+        }
+    
     try:
         # Check if Firebase app is initialized
         app = firebase_admin.get_app()
