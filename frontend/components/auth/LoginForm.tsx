@@ -71,13 +71,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-900/20 p-3 text-sm text-red-400 border border-red-900/50">
+        <div className="rounded-md p-3 text-sm" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#ef4444', border: '1px solid rgba(220, 38, 38, 0.3)' }}>
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+        <label htmlFor="email" className="block text-sm font-medium" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
           Email
         </label>
         <div className="relative mt-1">
@@ -90,14 +90,17 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
+            className="block w-full rounded-md py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1"
+            style={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'white' }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = '#ab68ff'; e.currentTarget.style.boxShadow = '0 0 0 1px #ab68ff'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
             placeholder="you@example.com"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+        <label htmlFor="password" className="block text-sm font-medium" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
           Password
         </label>
         <div className="relative mt-1">
@@ -110,7 +113,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
+            className="block w-full rounded-md py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1"
+            style={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'white' }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = '#ab68ff'; e.currentTarget.style.boxShadow = '0 0 0 1px #ab68ff'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
             placeholder="••••••••"
           />
         </div>
@@ -128,7 +134,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center rounded-md bg-[#ab68ff] px-4 py-2 text-sm font-medium text-white hover:bg-[#9050e0] focus:outline-none focus:ring-2 focus:ring-[#ab68ff] focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-50 transition-colors"
+        className="flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none disabled:opacity-50"
+        style={{ backgroundColor: '#ab68ff', color: 'white' }}
+        onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#9050e0')}
+        onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#ab68ff')}
       >
         {loading ? (
           <>
@@ -142,10 +151,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-700" />
+          <div className="w-full border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-[#1a1a1a] px-2 text-gray-400">
+          <span className="px-2" style={{ backgroundColor: '#1a1a1a', color: 'rgba(255, 255, 255, 0.6)' }}>
             Or continue with
           </span>
         </div>
@@ -155,7 +164,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         type="button"
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="flex w-full items-center justify-center rounded-md border border-gray-700 bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ab68ff] focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-50 transition-colors"
+        className="flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none disabled:opacity-50"
+        style={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'rgba(255, 255, 255, 0.8)' }}
+        onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#1f1f1f')}
+        onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#0a0a0a')}
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
           <path
