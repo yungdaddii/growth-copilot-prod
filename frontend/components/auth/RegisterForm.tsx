@@ -114,13 +114,13 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
+        <div className="rounded-md bg-red-900/20 p-3 text-sm text-red-400 border border-red-900/50">
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-300">
           Full Name
         </label>
         <div className="relative mt-1">
@@ -134,14 +134,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.name}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
             placeholder="John Doe"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-300">
           Email
         </label>
         <div className="relative mt-1">
@@ -155,14 +155,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.email}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
             placeholder="you@example.com"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="companyName" className="block text-sm font-medium text-gray-300">
           Company Name (Optional)
         </label>
         <div className="relative mt-1">
@@ -175,14 +175,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             type="text"
             value={formData.companyName}
             onChange={handleChange}
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
             placeholder="Acme Inc."
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-300">
           Password
         </label>
         <div className="relative mt-1">
@@ -196,14 +196,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.password}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
             placeholder="••••••••"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
           Confirm Password
         </label>
         <div className="relative mt-1">
@@ -217,7 +217,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-md border border-gray-700 bg-[#0a0a0a] py-2 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-[#ab68ff] focus:outline-none focus:ring-1 focus:ring-[#ab68ff]"
             placeholder="••••••••"
           />
         </div>
@@ -226,7 +226,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+        className="flex w-full items-center justify-center rounded-md bg-[#ab68ff] px-4 py-2 text-sm font-medium text-white hover:bg-[#9050e0] focus:outline-none focus:ring-2 focus:ring-[#ab68ff] focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-50 transition-colors"
       >
         {loading ? (
           <>
@@ -240,10 +240,10 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+          <div className="w-full border-t border-gray-700" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white px-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+          <span className="bg-[#1a1a1a] px-2 text-gray-400">
             Or continue with
           </span>
         </div>
@@ -253,7 +253,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         type="button"
         onClick={handleGoogleSignUp}
         disabled={loading}
-        className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+        className="flex w-full items-center justify-center rounded-md border border-gray-700 bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ab68ff] focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-50 transition-colors"
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
           <path
@@ -276,7 +276,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         Sign up with Google
       </button>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">
+      <p className="text-xs text-gray-400">
         By creating an account, you agree to our Terms of Service and Privacy Policy
       </p>
     </form>

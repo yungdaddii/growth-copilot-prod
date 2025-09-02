@@ -17,20 +17,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }: Au
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="relative w-full max-w-md rounded-xl bg-[#1a1a1a] border border-gray-800 p-6 shadow-2xl">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-white">
             {mode === "login" ? "Welcome Back" : "Create Account"}
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-400">
             {mode === "login"
               ? "Sign in to access your growth insights"
               : "Start your journey to 10x revenue growth"}
@@ -44,11 +44,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }: Au
         )}
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-400">
             {mode === "login" ? "Don't have an account?" : "Already have an account?"}
             <button
               onClick={() => setMode(mode === "login" ? "register" : "login")}
-              className="ml-1 font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+              className="ml-1 font-medium text-[#ab68ff] hover:text-[#9050e0] transition-colors"
             >
               {mode === "login" ? "Sign up" : "Sign in"}
             </button>
