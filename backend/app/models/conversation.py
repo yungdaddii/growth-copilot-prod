@@ -4,12 +4,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
-from typing import TYPE_CHECKING
 
 from app.database import Base
-
-if TYPE_CHECKING:
-    from app.models.user import User
 
 
 class MessageRole(str, enum.Enum):
