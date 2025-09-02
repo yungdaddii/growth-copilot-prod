@@ -9,7 +9,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced
+from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced, health
 
 # Import auth module safely (in case User table doesn't exist yet)
 try:
@@ -111,17 +111,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Health check
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
-    }
-
-
 # Include routers
+app.include_router(health.router)  # Health check routes
 if AUTH_AVAILABLE:
     app.include_router(auth.router)  # Auth routes at /api/auth
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])

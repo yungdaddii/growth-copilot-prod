@@ -17,46 +17,68 @@ from app.schemas.auth import UserCreate, UserResponse
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
-cred_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
-cred_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
-
-if cred_json:
-    # Use JSON string from environment variable (for Railway)
-    import json
-    try:
-        cred_dict = json.loads(cred_json)
-        cred = credentials.Certificate(cred_dict)
-        # Explicitly set project ID
-        firebase_admin.initialize_app(cred, {
-            'projectId': cred_dict.get('project_id', 'keelo-5924a')
-        })
-        logger.info("Firebase Admin SDK initialized from JSON env var")
-    except Exception as e:
-        logger.error(f"Failed to initialize Firebase from JSON: {e}")
-elif cred_path and os.path.exists(cred_path):
-    # Use file path (for local development)
-    cred = credentials.Certificate(cred_path)
-    # Read project ID from the certificate file
-    import json
-    with open(cred_path, 'r') as f:
-        cred_data = json.load(f)
-    firebase_admin.initialize_app(cred, {
-        'projectId': cred_data.get('project_id', 'keelo-5924a')
-    })
-    logger.info("Firebase Admin SDK initialized from file")
-else:
-    # Initialize with default credentials (for Google Cloud environments)
-    try:
-        # Set project ID explicitly
-        firebase_admin.initialize_app(options={
-            'projectId': os.getenv('GOOGLE_CLOUD_PROJECT', 'keelo-5924a')
-        })
-        logger.info("Firebase Admin SDK initialized with default credentials")
-    except ValueError:
-        # App already initialized
-        pass
-    except Exception as e:
-        logger.warning(f"Firebase Admin SDK not initialized: {e}")
+try:
+    # Check if already initialized
+    firebase_admin.get_app()
+    logger.info("Firebase Admin SDK already initialized")
+except ValueError:
+    # Not initialized, proceed with initialization
+    cred_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+    cred_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    # Also check for SERVICE_ACCOUNT_JSON (alternative env var name)
+    if not cred_json:
+        cred_json = os.getenv("SERVICE_ACCOUNT_JSON")
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "keelo-5924a")
+    
+    initialized = False
+    
+    if cred_json:
+        # Use JSON string from environment variable (for Railway)
+        import json
+        try:
+            cred_dict = json.loads(cred_json)
+            cred = credentials.Certificate(cred_dict)
+            # Explicitly set project ID
+            firebase_admin.initialize_app(cred, {
+                'projectId': cred_dict.get('project_id', project_id)
+            })
+            logger.info("Firebase Admin SDK initialized from JSON env var")
+            initialized = True
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Firebase JSON: {e}")
+            logger.error(f"JSON string length: {len(cred_json) if cred_json else 0}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Firebase from JSON: {e}")
+    
+    if not initialized and cred_path and os.path.exists(cred_path):
+        # Use file path (for local development)
+        try:
+            cred = credentials.Certificate(cred_path)
+            # Read project ID from the certificate file
+            import json
+            with open(cred_path, 'r') as f:
+                cred_data = json.load(f)
+            firebase_admin.initialize_app(cred, {
+                'projectId': cred_data.get('project_id', project_id)
+            })
+            logger.info("Firebase Admin SDK initialized from file")
+            initialized = True
+        except Exception as e:
+            logger.error(f"Failed to initialize Firebase from file: {e}")
+    
+    if not initialized:
+        # Try to initialize without credentials (for environments with default auth)
+        try:
+            # For Railway/production, we need explicit credentials
+            # Create a minimal app without auth if credentials are missing
+            firebase_admin.initialize_app(options={
+                'projectId': project_id
+            })
+            logger.warning(f"Firebase Admin SDK initialized without credentials - auth will not work")
+            logger.warning("Please set FIREBASE_SERVICE_ACCOUNT_JSON or SERVICE_ACCOUNT_JSON environment variable")
+        except Exception as e:
+            logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+            # Continue without Firebase - auth endpoints will fail gracefully
 
 # HTTP Bearer token security
 security = HTTPBearer(auto_error=False)
@@ -75,9 +97,24 @@ class FirebaseAuth:
             )
         
         try:
+            # Check if Firebase is properly initialized
+            app = firebase_admin.get_app()
+            if not app:
+                logger.error("Firebase Admin SDK not initialized")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Authentication service not available"
+                )
+            
             # Verify the Firebase ID token
             decoded_token = firebase_auth.verify_id_token(credentials.credentials)
             return decoded_token
+        except ValueError as e:
+            logger.error(f"Firebase not initialized: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service not configured. Please check server configuration."
+            )
         except firebase_admin.exceptions.FirebaseError as e:
             logger.error(f"Firebase token verification failed: {e}")
             raise HTTPException(
