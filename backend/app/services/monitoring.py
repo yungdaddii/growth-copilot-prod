@@ -136,18 +136,36 @@ class WebsiteMonitor:
     
     def _count_testimonials(self, soup: BeautifulSoup) -> int:
         """Count testimonial elements."""
-        testimonial_keywords = ['testimonial', 'review', 'customer-story', 'quote', 'feedback']
+        testimonial_keywords = ['testimonial', 'review', 'customer-story', 'quote', 'feedback', 'client', 'customer']
         count = 0
         
+        # Check for testimonial-like class names
         for element in soup.find_all(class_=True):
             classes = ' '.join(element.get('class', []))
             if any(keyword in classes.lower() for keyword in testimonial_keywords):
                 count += 1
         
-        # Also check for quote patterns
-        blockquotes = len(soup.find_all('blockquote'))
+        # Check for quote patterns with attribution
+        blockquotes = soup.find_all('blockquote')
+        for quote in blockquotes:
+            # Check if it has attribution (likely a testimonial)
+            text = quote.get_text().lower()
+            if any(word in text for word in ['ceo', 'founder', 'director', 'manager', 'president']):
+                count += 1
         
-        return min(count + blockquotes, 50)  # Cap at 50
+        # Check for review stars/ratings
+        rating_elements = soup.find_all(class_=lambda x: x and ('star' in str(x).lower() or 'rating' in str(x).lower()))
+        count += len(rating_elements) // 5  # Assume 5 stars per review
+        
+        # Check for customer logos section
+        logo_sections = soup.find_all(['section', 'div'], class_=lambda x: x and any(
+            keyword in str(x).lower() for keyword in ['logo', 'client', 'trusted-by', 'customers']
+        ))
+        if logo_sections:
+            count += min(len(logo_sections) * 3, 10)  # Estimate 3 testimonials per logo section, max 10
+        
+        # Return a reasonable number (sites rarely show more than 20 testimonials)
+        return min(count, 20)
     
     async def _get_previous_snapshot(self, domain: str) -> Optional[SiteSnapshot]:
         """Get the most recent snapshot for a domain."""

@@ -345,22 +345,54 @@ class ContextAwareChat:
                 'content': "Please provide at least 2 domains to compare (e.g., 'compare stripe.com vs square.com')"
             }
         
-        # Get latest snapshots
+        # Get latest snapshots or analyze fresh
         snapshots = {}
-        for domain in domains[:3]:  # Max 3 domains
-            result = await self.session.execute(
-                select(SiteSnapshot)
-                .where(SiteSnapshot.domain == domain)
-                .order_by(SiteSnapshot.snapshot_date.desc())
-                .limit(1)
-            )
-            snapshot = result.scalar_one_or_none()
+        analyses = {}
+        
+        # Try to use the full analyzer for better data
+        try:
+            from app.core.analyzer import DomainAnalyzer
+            analyzer = DomainAnalyzer()
             
-            if not snapshot:
-                # Capture new snapshot
-                snapshot = await self.monitor.capture_snapshot(domain)
-            
-            snapshots[domain] = snapshot
+            for domain in domains[:3]:  # Max 3 domains
+                # Check if we have recent data (less than 1 hour old)
+                result = await self.session.execute(
+                    select(SiteSnapshot)
+                    .where(SiteSnapshot.domain == domain)
+                    .where(SiteSnapshot.snapshot_date > datetime.utcnow() - timedelta(hours=1))
+                    .order_by(SiteSnapshot.snapshot_date.desc())
+                    .limit(1)
+                )
+                snapshot = result.scalar_one_or_none()
+                
+                if not snapshot:
+                    # Do a full analysis for better data
+                    try:
+                        analysis_result = await analyzer.analyze(domain)
+                        analyses[domain] = analysis_result
+                        # Also capture snapshot for storage
+                        snapshot = await self.monitor.capture_snapshot(domain)
+                    except Exception as e:
+                        logger.warning(f"Full analysis failed for {domain}, using basic capture: {e}")
+                        snapshot = await self.monitor.capture_snapshot(domain)
+                
+                snapshots[domain] = snapshot
+        except Exception as e:
+            logger.error(f"Error in comparison analysis: {e}")
+            # Fallback to basic snapshots
+            for domain in domains[:3]:
+                result = await self.session.execute(
+                    select(SiteSnapshot)
+                    .where(SiteSnapshot.domain == domain)
+                    .order_by(SiteSnapshot.snapshot_date.desc())
+                    .limit(1)
+                )
+                snapshot = result.scalar_one_or_none()
+                
+                if not snapshot:
+                    snapshot = await self.monitor.capture_snapshot(domain)
+                
+                snapshots[domain] = snapshot
         
         # Compare metrics
         response = f"## ⚔️ Comparison: {' vs '.join(domains[:3])}\n\n"
