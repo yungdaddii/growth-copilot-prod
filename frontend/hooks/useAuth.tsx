@@ -17,6 +17,7 @@ interface UserProfile {
   canUseAiChat: boolean;
   canExportData: boolean;
   canUseApi: boolean;
+  createdAt?: string;
 }
 
 interface AuthContextType {
@@ -27,6 +28,7 @@ interface AuthContextType {
   login: (idToken: string, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   refreshProfile: async () => {},
+  updateUserProfile: async () => {},
 });
 
 export function useAuth() {
@@ -96,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           canUseAiChat: data.can_use_ai_chat,
           canExportData: data.can_export_data,
           canUseApi: data.can_use_api,
+          createdAt: data.created_at,
         });
       } else {
         setError('Failed to fetch user profile');
@@ -137,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           canUseAiChat: data.can_use_ai_chat,
           canExportData: data.can_export_data,
           canUseApi: data.can_use_api,
+          createdAt: data.created_at,
         });
       } else {
         const errorData = await response.json();
@@ -183,6 +188,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (data: Partial<UserProfile>) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      setError(null);
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          display_name: data.displayName,
+          company_name: data.companyName,
+          company_website: data.companyWebsite,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        setProfile({
+          id: updatedData.id,
+          email: updatedData.email,
+          displayName: updatedData.display_name,
+          photoUrl: updatedData.photo_url,
+          companyName: updatedData.company_name,
+          companyWebsite: updatedData.company_website,
+          subscriptionTier: updatedData.subscription_tier,
+          subscriptionStatus: updatedData.subscription_status,
+          monthlyAnalysesLimit: updatedData.monthly_analyses_limit,
+          monthlyAnalysesUsed: updatedData.monthly_analyses_used,
+          canUseAiChat: updatedData.can_use_ai_chat,
+          canExportData: updatedData.can_export_data,
+          canUseApi: updatedData.can_use_api,
+          createdAt: updatedData.created_at,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      console.error('Update profile error:', err);
+      setError(err.message || 'Failed to update profile');
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -193,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         refreshProfile,
+        updateUserProfile,
       }}
     >
       {children}

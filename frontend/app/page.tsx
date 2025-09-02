@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useChatStore } from '@/store/chat'
-import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles, Plug, User } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles, Plug } from 'lucide-react'
 import { PromptLibrary } from '@/components/PromptLibrary'
 import { IntegrationsPanel } from '@/components/integrations/IntegrationsPanel'
-import { Header } from '@/components/layout/Header'
-import { useAuth } from '@/hooks/useAuth'
+import { UserProfileMenu } from '@/components/UserProfileMenu'
 import AuthModalStyled from '@/components/auth/AuthModalStyled'
 
 export default function Home() {
@@ -86,6 +86,18 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Listen for auth modal event from UserProfileMenu
+  useEffect(() => {
+    const handleOpenAuthModal = () => {
+      setShowAuthModal(true)
+    }
+    
+    window.addEventListener('openAuthModal', handleOpenAuthModal)
+    return () => {
+      window.removeEventListener('openAuthModal', handleOpenAuthModal)
+    }
+  }, [])
 
   const showWelcome = messages.length === 0
 
@@ -223,59 +235,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{ 
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          padding: '12px'
-        }}>
-          {user ? (
-            <div style={{
-              padding: '8px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: '#ab68ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                color: 'white',
-                fontWeight: '600'
-              }}>
-                {profile?.displayName?.[0] || profile?.email?.[0] || 'U'}
-              </div>
-              <div>
-                <div style={{ color: 'white', fontSize: '14px' }}>
-                  {profile?.displayName || profile?.email || 'User'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-                  {profile?.subscriptionTier || 'Free'}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: '#ab68ff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}
-            >
-              Sign In / Sign Up
-            </button>
-          )}
-        </div>
+        {/* User Profile Menu */}
+        <UserProfileMenu />
       </div>
 
       {/* Main Content */}
