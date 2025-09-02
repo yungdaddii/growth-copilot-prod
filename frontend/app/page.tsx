@@ -8,7 +8,7 @@ import { PromptLibrary } from '@/components/PromptLibrary'
 import { IntegrationsPanel } from '@/components/integrations/IntegrationsPanel'
 import { Header } from '@/components/layout/Header'
 import { useAuth } from '@/hooks/useAuth'
-import AuthModal from '@/components/auth/AuthModal'
+import AuthModalStyled from '@/components/auth/AuthModalStyled'
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -757,7 +757,7 @@ export default function Home() {
       />
       
       {/* Auth Modal */}
-      <AuthModal
+      <AuthModalStyled
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
