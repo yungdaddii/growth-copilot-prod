@@ -3,9 +3,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useChatStore } from '@/store/chat'
-import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles, Plug } from 'lucide-react'
+import { Plus, MessageSquare, Search, BookOpen, ChevronLeft, ArrowUp, Paperclip, Mic, Sparkles, Plug, User } from 'lucide-react'
 import { PromptLibrary } from '@/components/PromptLibrary'
 import { IntegrationsPanel } from '@/components/integrations/IntegrationsPanel'
+import { Header } from '@/components/layout/Header'
+import { useAuth } from '@/hooks/useAuth'
+import AuthModal from '@/components/auth/AuthModal'
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -13,8 +16,10 @@ export default function Home() {
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
+  const { user, profile } = useAuth()
   const { messages, addMessage, conversations, conversationId, clearMessages, setConversationId } = useChatStore()
   const { sendMessage, connectionStatus } = useWebSocket({
     onMessage: (msg) => {
@@ -222,31 +227,54 @@ export default function Home() {
           borderTop: '1px solid rgba(255,255,255,0.1)',
           padding: '12px'
         }}>
-          <div style={{
-            padding: '8px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
+          {user ? (
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: '#ab68ff',
+              padding: '8px 12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              color: 'white',
-              fontWeight: '600'
+              gap: '12px'
             }}>
-              G
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#ab68ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                color: 'white',
+                fontWeight: '600'
+              }}>
+                {profile?.displayName?.[0] || profile?.email?.[0] || 'U'}
+              </div>
+              <div>
+                <div style={{ color: 'white', fontSize: '14px' }}>
+                  {profile?.displayName || profile?.email || 'User'}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                  {profile?.subscriptionTier || 'Free'}
+                </div>
+              </div>
             </div>
-            <div>
-              <div style={{ color: 'white', fontSize: '14px' }}>Keelo.ai</div>
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Free</div>
-            </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: '#ab68ff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Sign In / Sign Up
+            </button>
+          )}
         </div>
       </div>
 
@@ -726,6 +754,12 @@ export default function Home() {
       <IntegrationsPanel
         isOpen={integrationsOpen}
         onClose={() => setIntegrationsOpen(false)}
+      />
+      
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
     </div>
   )
