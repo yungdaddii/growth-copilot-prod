@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.database import Base
+from app.database_base import Base
 from app.models import *  # Import all models
 target_metadata = Base.metadata
 

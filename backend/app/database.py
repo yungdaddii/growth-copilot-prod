@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import NullPool, StaticPool
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 import logging
 
 from app.config import settings
+from app.database_base import Base  # Import shared Base
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,6 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
-# Base class for models
-Base = declarative_base()
 
 
 # Dependency for FastAPI

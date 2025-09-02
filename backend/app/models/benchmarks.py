@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Float, DateTime, Enum as SQLEnum, JSON
 from sqlalchemy.sql import func
 import enum
 
-from app.database import Base
+from app.database_base import Base
 from app.models.analysis import Industry
 
 

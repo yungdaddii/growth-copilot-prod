@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from app.models.base import Base
+from app.database_base import Base
 
 
 class UserContext(Base):

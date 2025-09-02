@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 import enum
 
-from app.models.base import Base
+from app.database_base import Base
 
 
 class SubscriptionTier(str, enum.Enum):

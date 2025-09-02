@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 import uuid
 import enum
 
-from app.database import Base
+from app.database_base import Base
 
 
 class MessageRole(str, enum.Enum):

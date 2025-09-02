@@ -2,7 +2,14 @@
 
 # Get the DATABASE_URL from Railway and convert asyncpg to postgresql for Alembic
 echo "Getting DATABASE_URL from Railway..."
-DB_URL=$(railway variables | grep "DATABASE_URL" | head -1 | awk -F'│' '{print $2}' | xargs)
+DB_URL=$(railway variables -k | grep "DATABASE_URL=" | cut -d'=' -f2-)
+
+# Check if we got the URL
+if [ -z "$DB_URL" ]; then
+    echo "Error: Could not get DATABASE_URL from Railway"
+    echo "Please run: railway variables -k"
+    exit 1
+fi
 
 # Replace postgresql+asyncpg with postgresql for synchronous connection
 # Handle both formats: postgresql+asyncpg:// and asyncpg://
@@ -15,9 +22,7 @@ else
     DB_URL_SYNC=$DB_URL
 fi
 
-echo "Original URL: $DB_URL"
-echo "Sync URL: $DB_URL_SYNC"
-echo "Running migration..."
-DATABASE_URL="$DB_URL_SYNC" alembic upgrade head
+echo "Running migration with synchronized database URL..."
+DATABASE_URL="$DB_URL_SYNC" railway run alembic upgrade head
 
 echo "Migration complete!"
