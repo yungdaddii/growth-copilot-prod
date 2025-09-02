@@ -345,6 +345,33 @@ class ContextAwareChat:
                 'content': "Please provide at least 2 domains to compare (e.g., 'compare stripe.com vs square.com')"
             }
         
+        # Try to use enhanced comparison first
+        try:
+            from app.services.enhanced_comparison import EnhancedComparisonService
+            
+            enhanced_service = EnhancedComparisonService(self.session)
+            result = await enhanced_service.compare_domains(domains)
+            
+            # Update context with competitors
+            if not context.competitors:
+                context.competitors = []
+            
+            for domain in domains:
+                if domain != context.primary_domain and domain not in context.competitors:
+                    context.competitors.append(domain)
+            
+            await self.session.commit()
+            
+            return {
+                'type': 'comparison',
+                'content': result['response'],
+                'enhanced': True,
+                'analyses': result.get('analyses'),
+                'insights': result.get('insights')
+            }
+        except Exception as e:
+            logger.warning(f"Enhanced comparison failed, falling back to basic: {e}")
+        
         # Get latest snapshots or analyze fresh
         snapshots = {}
         analyses = {}
