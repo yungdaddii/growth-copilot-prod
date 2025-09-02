@@ -74,6 +74,9 @@ class TokenResponse(BaseModel):
 class LoginRequest(BaseModel):
     """Schema for login request."""
     id_token: str = Field(..., description="Firebase ID token from client-side auth")
+    display_name: Optional[str] = Field(None, description="User's display name for registration")
+    company_name: Optional[str] = Field(None, description="Company name for registration")
+    company_website: Optional[str] = Field(None, description="Company website for registration")
 
 
 class SubscriptionUpdate(BaseModel):

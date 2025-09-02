@@ -14,6 +14,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
@@ -30,7 +31,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Send token to backend
       await login(idToken);
       
-      onSuccess();
+      // Show success message
+      setSuccess("Welcome back! Redirecting...");
+      
+      // Wait a moment for user to see the success message
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.code === "auth/user-not-found") {
@@ -59,7 +66,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Send token to backend
       await login(idToken);
       
-      onSuccess();
+      // Show success message
+      setSuccess("Welcome back! Redirecting...");
+      
+      // Wait a moment for user to see the success message
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
     } catch (err: any) {
       console.error("Google sign-in error:", err);
       setError("Failed to sign in with Google");
@@ -73,6 +86,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       {error && (
         <div className="rounded-md p-3 text-sm" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#ef4444', border: '1px solid rgba(220, 38, 38, 0.3)' }}>
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="rounded-md p-3 text-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+          {success}
         </div>
       )}
 

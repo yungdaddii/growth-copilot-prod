@@ -32,8 +32,28 @@ async def login(
     If the user doesn't exist, it creates a new user account.
     """
     try:
-        # Verify the Firebase ID token
-        decoded_token = await FirebaseAuth.verify_token(request.id_token)
+        # Import Firebase auth
+        from firebase_admin import auth as firebase_auth
+        import firebase_admin
+        
+        # Check if Firebase is initialized
+        try:
+            app = firebase_admin.get_app()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service not configured"
+            )
+        
+        # Verify the Firebase ID token directly
+        try:
+            decoded_token = firebase_auth.verify_id_token(request.id_token)
+        except Exception as e:
+            logger.error(f"Token verification failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token"
+            )
         
         # Get or create user
         firebase_uid = decoded_token.get("uid")
@@ -55,9 +75,11 @@ async def login(
             user = User(
                 firebase_uid=firebase_uid,
                 email=email,
-                display_name=decoded_token.get("name"),
+                display_name=request.display_name or decoded_token.get("name"),
                 photo_url=decoded_token.get("picture"),
                 email_verified=decoded_token.get("email_verified", False),
+                company_name=request.company_name,
+                company_website=request.company_website,
                 subscription_tier=SubscriptionTier.FREE,
                 subscription_status=SubscriptionStatus.ACTIVE,
                 monthly_analyses_limit=10,
@@ -75,7 +97,7 @@ async def login(
             db.add(user)
             db.commit()
             db.refresh(user)
-            logger.info(f"Created new user: {email}")
+            logger.info(f"Created new user: {email} with company: {request.company_name}")
         else:
             # Update last login
             from datetime import datetime

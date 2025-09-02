@@ -20,6 +20,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     companyWebsite: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
@@ -68,12 +69,18 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
 
       // Send registration data to backend
       await login(idToken, {
-        displayName: formData.name,
-        companyName: formData.companyName,
-        companyWebsite: formData.companyWebsite,
+        display_name: formData.name,
+        company_name: formData.companyName,
+        company_website: formData.companyWebsite,
       });
 
-      onSuccess();
+      // Show success message
+      setSuccess("Account created successfully! Welcome to Keelo.ai!");
+      
+      // Wait a moment for user to see the success message
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
     } catch (err: any) {
       console.error("Registration error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -102,7 +109,13 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       // Send token to backend
       await login(idToken);
 
-      onSuccess();
+      // Show success message
+      setSuccess("Account created successfully! Welcome to Keelo.ai!");
+      
+      // Wait a moment for user to see the success message
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
     } catch (err: any) {
       console.error("Google sign-up error:", err);
       setError("Failed to sign up with Google");
@@ -116,6 +129,12 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       {error && (
         <div className="rounded-md p-3 text-sm" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#ef4444', border: '1px solid rgba(220, 38, 38, 0.3)' }}>
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="rounded-md p-3 text-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+          {success}
         </div>
       )}
 
