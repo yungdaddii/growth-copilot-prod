@@ -12,7 +12,14 @@ from app.schemas.message import WebSocketMessage, MessagePayload, AnalysisUpdate
 from app.schemas.conversation import MessageCreate
 from app.models.conversation import Conversation, Message, MessageRole, MessageType
 from app.models.analysis import Analysis
-from app.models.user import User
+
+# Import User conditionally to avoid circular imports
+try:
+    from app.models.user import User
+    USER_MODEL_AVAILABLE = True
+except ImportError:
+    User = None
+    USER_MODEL_AVAILABLE = False
 from app.core.analyzer import DomainAnalyzer
 from app.core.safe_enhanced_nlp import SafeEnhancedNLPProcessor
 from app.core.conversation_handler import ConversationHandler
@@ -77,7 +84,7 @@ async def websocket_endpoint(
 ):
     # Verify user if token provided
     user: Optional[User] = None
-    if token:
+    if token and USER_MODEL_AVAILABLE:
         try:
             from app.core.auth import FirebaseAuth
             from app.database import get_db_context

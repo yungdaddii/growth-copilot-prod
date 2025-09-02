@@ -4,8 +4,12 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
+from typing import TYPE_CHECKING
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class MessageRole(str, enum.Enum):
@@ -33,7 +37,7 @@ class Conversation(Base):
     meta_data = Column(JSON, default=dict)  # Changed from metadata to meta_data
     
     # Relationships
-    user = relationship("User", back_populates="conversations", foreign_keys=[user_id])
+    user = relationship("User", back_populates="conversations", foreign_keys=[user_id], lazy="joined")
     messages = relationship("Message", back_populates="conversation", order_by="Message.created_at")
     analyses = relationship("Analysis", back_populates="conversation")
 
