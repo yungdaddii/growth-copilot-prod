@@ -1,7 +1,9 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from functools import lru_cache
 import os
+import json
 
 
 class Settings(BaseSettings):
@@ -14,7 +16,20 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "https://growthcopilot.ai"]
+    
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        # Check for environment variable first
+        cors_env = os.getenv("CORS_ORIGINS")
+        if cors_env:
+            try:
+                # Try to parse as JSON array
+                return json.loads(cors_env)
+            except json.JSONDecodeError:
+                # If not JSON, split by comma
+                return [origin.strip() for origin in cors_env.split(",")]
+        # Default for development
+        return ["http://localhost:3000", "http://localhost:3001", "https://growthcopilot.ai"]
     
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/growthcopilot"

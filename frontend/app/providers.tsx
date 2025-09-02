@@ -3,6 +3,7 @@
 import { ThemeProvider } from 'next-themes'
 import { ReactNode } from 'react'
 import { PostHogProvider } from '@/components/providers/PostHogProvider'
+import { AuthProvider } from '@/hooks/useAuth'
 
 interface ProvidersProps {
   children: ReactNode
@@ -16,9 +17,11 @@ export function Providers({ children }: ProvidersProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <PostHogProvider>
-        {children}
-      </PostHogProvider>
+      <AuthProvider>
+        <PostHogProvider>
+          {children}
+        </PostHogProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

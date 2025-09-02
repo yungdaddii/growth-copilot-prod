@@ -1,10 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 import json
 import asyncio
 import structlog
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 from uuid import UUID, uuid4
 
 from app.database import get_db
@@ -12,6 +12,7 @@ from app.schemas.message import WebSocketMessage, MessagePayload, AnalysisUpdate
 from app.schemas.conversation import MessageCreate
 from app.models.conversation import Conversation, Message, MessageRole, MessageType
 from app.models.analysis import Analysis
+from app.models.user import User
 from app.core.analyzer import DomainAnalyzer
 from app.core.safe_enhanced_nlp import SafeEnhancedNLPProcessor
 from app.core.conversation_handler import ConversationHandler
@@ -71,8 +72,29 @@ manager = ConnectionManager()
 @router.websocket("/chat")
 async def websocket_endpoint(
     websocket: WebSocket,
-    session_id: str = None
+    session_id: str = Query(None),
+    token: str = Query(None)  # Optional Firebase ID token
 ):
+    # Verify user if token provided
+    user: Optional[User] = None
+    if token:
+        try:
+            from app.core.auth import FirebaseAuth
+            from app.database import get_db_context
+            
+            # Verify Firebase token
+            decoded_token = await FirebaseAuth.verify_token(token)
+            firebase_uid = decoded_token.get("uid")
+            
+            # Get user from database
+            async with get_db_context() as db:
+                user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+                if user:
+                    logger.info(f"WebSocket authenticated for user: {user.email}")
+        except Exception as e:
+            logger.warning(f"Failed to authenticate WebSocket: {e}")
+            # Continue without authentication
+    
     # Use provided session_id or generate new one
     if not session_id:
         session_id = str(uuid4())
@@ -131,7 +153,11 @@ async def websocket_endpoint(
                 if not conversation:
                     from app.database import get_db_context
                     async with get_db_context() as db:
-                        conversation = Conversation(share_slug=generate_share_slug())
+                        conversation = Conversation(
+                            share_slug=generate_share_slug(),
+                            user_id=user.id if user else None,
+                            session_id=session_id
+                        )
                         db.add(conversation)
                         await db.commit()
                         await db.refresh(conversation)
@@ -297,7 +323,8 @@ async def websocket_endpoint(
                                     analysis_result = await analyzer.analyze(
                                         domain=domain,
                                         conversation_id=conversation.id,
-                                        update_callback=update_callback
+                                        update_callback=update_callback,
+                                        user_id=user.id if user else None
                                     )
                                 
                                 # Track successful analysis

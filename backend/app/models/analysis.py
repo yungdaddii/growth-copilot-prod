@@ -32,6 +32,7 @@ class Analysis(Base):
     __tablename__ = "analyses"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"))
     domain = Column(String(255), nullable=False, index=True)
     industry = Column(SQLEnum(Industry), default=Industry.OTHER)
@@ -55,6 +56,7 @@ class Analysis(Base):
     seo_score = Column(Integer)  # 0-100
     
     # Relationships
+    user = relationship("User", back_populates="analyses", foreign_keys=[user_id])
     conversation = relationship("Conversation", back_populates="analyses")
 
 

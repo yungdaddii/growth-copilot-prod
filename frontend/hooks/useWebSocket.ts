@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useAuth } from './useAuth'
 
 interface WebSocketMessage {
   type: string
@@ -22,6 +23,7 @@ export function useWebSocket({
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const reconnectAttemptsRef = useRef(0)
+  const { user } = useAuth()
   
   // Store callbacks in refs to avoid recreating connectWebSocket
   const onMessageRef = useRef(onMessage)
@@ -36,7 +38,7 @@ export function useWebSocket({
     onDisconnectRef.current = onDisconnect
   }, [onMessage, onError, onConnect, onDisconnect])
 
-  const connectWebSocket = useCallback(() => {
+  const connectWebSocket = useCallback(async () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return
     }
@@ -51,7 +53,17 @@ export function useWebSocket({
     }
     
     const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/chat'
-    const wsUrl = `${baseWsUrl}?session_id=${sessionId}`
+    let wsUrl = `${baseWsUrl}?session_id=${sessionId}`
+    
+    // Add authentication token if user is logged in
+    if (user) {
+      try {
+        const idToken = await user.getIdToken()
+        wsUrl += `&token=${idToken}`
+      } catch (error) {
+        console.error('Failed to get auth token:', error)
+      }
+    }
     
     try {
       const ws = new WebSocket(wsUrl)
@@ -100,7 +112,7 @@ export function useWebSocket({
       console.error('Failed to create WebSocket:', error)
       setConnectionStatus('disconnected')
     }
-  }, [])
+  }, [user])
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -126,7 +138,7 @@ export function useWebSocket({
     return () => {
       disconnect()
     }
-  }, [])
+  }, [connectWebSocket, disconnect])
 
   return {
     sendMessage,

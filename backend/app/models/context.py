@@ -1,7 +1,8 @@
 """User context and monitoring models for persistent memory."""
 
-from sqlalchemy import Column, String, JSON, DateTime, Text, Float, Integer, Boolean
+from sqlalchemy import Column, String, JSON, DateTime, Text, Float, Integer, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
@@ -14,6 +15,7 @@ class UserContext(Base):
     __tablename__ = "user_contexts"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     session_id = Column(String, unique=True, index=True)  # From cookie/session
     primary_domain = Column(String)  # User's main website
     competitors = Column(JSON, default=list)  # ["stripe.com", "square.com"]
@@ -24,6 +26,9 @@ class UserContext(Base):
     last_analysis = Column(JSON)  # Cache of last analysis
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="contexts", foreign_keys=[user_id])
 
 
 class SiteSnapshot(Base):

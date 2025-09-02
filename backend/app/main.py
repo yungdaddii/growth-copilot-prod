@@ -9,7 +9,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced
+from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced, auth
 from app.utils.cache import init_redis
 from app.integrations.google_ads import google_ads_router
 
@@ -112,6 +112,7 @@ async def health_check():
 
 
 # Include routers
+app.include_router(auth.router)  # Auth routes at /api/auth
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 app.include_router(test_ws.router, prefix="/ws", tags=["test"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])

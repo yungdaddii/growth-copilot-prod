@@ -76,7 +76,8 @@ class DomainAnalyzer:
         self,
         domain: str,
         conversation_id: UUID,
-        update_callback: Optional[Callable] = None
+        update_callback: Optional[Callable] = None,
+        user_id: Optional[UUID] = None
     ) -> Analysis:
         # Clean and validate domain
         domain = self._clean_domain(domain)
@@ -85,7 +86,8 @@ class DomainAnalyzer:
         analysis = Analysis(
             conversation_id=conversation_id,
             domain=domain,
-            status=AnalysisStatus.ANALYZING
+            status=AnalysisStatus.ANALYZING,
+            user_id=user_id
         )
         self.db.add(analysis)
         await self.db.commit()
