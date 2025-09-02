@@ -352,7 +352,8 @@ class ContextAwareChat:
         # Try to use the full analyzer for better data
         try:
             from app.core.analyzer import DomainAnalyzer
-            analyzer = DomainAnalyzer()
+            # DomainAnalyzer needs a database session
+            analyzer = DomainAnalyzer(self.session)
             
             for domain in domains[:3]:  # Max 3 domains
                 # Check if we have recent data (less than 1 hour old)

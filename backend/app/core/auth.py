@@ -26,19 +26,31 @@ if cred_json:
     try:
         cred_dict = json.loads(cred_json)
         cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
+        # Explicitly set project ID
+        firebase_admin.initialize_app(cred, {
+            'projectId': cred_dict.get('project_id', 'keelo-5924a')
+        })
         logger.info("Firebase Admin SDK initialized from JSON env var")
     except Exception as e:
         logger.error(f"Failed to initialize Firebase from JSON: {e}")
 elif cred_path and os.path.exists(cred_path):
     # Use file path (for local development)
     cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
+    # Read project ID from the certificate file
+    import json
+    with open(cred_path, 'r') as f:
+        cred_data = json.load(f)
+    firebase_admin.initialize_app(cred, {
+        'projectId': cred_data.get('project_id', 'keelo-5924a')
+    })
     logger.info("Firebase Admin SDK initialized from file")
 else:
     # Initialize with default credentials (for Google Cloud environments)
     try:
-        firebase_admin.initialize_app()
+        # Set project ID explicitly
+        firebase_admin.initialize_app(options={
+            'projectId': os.getenv('GOOGLE_CLOUD_PROJECT', 'keelo-5924a')
+        })
         logger.info("Firebase Admin SDK initialized with default credentials")
     except ValueError:
         # App already initialized
