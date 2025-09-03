@@ -33,7 +33,7 @@ class Conversation(Base):
     meta_data = Column(JSON, default=dict)  # Changed from metadata to meta_data
     
     # Relationships
-    user = relationship("User", back_populates="conversations", foreign_keys=[user_id], lazy="joined")
+    user = relationship("User", back_populates="conversations", foreign_keys=[user_id], lazy="select")
     messages = relationship("Message", back_populates="conversation", order_by="Message.created_at")
     analyses = relationship("Analysis", back_populates="conversation")
 

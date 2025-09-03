@@ -193,34 +193,9 @@ async def websocket_endpoint(
                 # Initialize AI conversation engine
                 ai_engine = AIConversationEngine()
                 
-                # Try context-aware processing first
+                # Skip context-aware processing for now (user_contexts table doesn't exist)
                 handled_by_context = False
                 logger.info(f"🔄 Starting message processing for: {payload.content[:50]}...")
-                
-                try:
-                    logger.info("Attempting context-aware processing...")
-                    from app.database import get_db_context
-                    async with get_db_context() as db:
-                        context_chat = ContextAwareChat(db)
-                        context_response = await context_chat.process_message(payload.content, session_id)
-                        
-                        # If context handler has a specific response, send it
-                        if context_response.get('type') in ['competitor_update', 'progress_report', 'opportunities', 'comparison', 'prediction', 'monitoring_added', 'analysis', 'info', 'error']:
-                            await manager.send_message(
-                                client_id,
-                                WebSocketMessage(
-                                    type="chat",
-                                    payload={
-                                        "content": context_response['content'],
-                                        "message_id": str(uuid4()),
-                                        "conversation_id": str(conversation.id) if conversation else None,
-                                        "metadata": context_response
-                                    }
-                                )
-                            )
-                            handled_by_context = True
-                except Exception as e:
-                    logger.error(f"Context processing error: {e}")
                 
                 # If not handled by context, do regular processing
                 if not handled_by_context:
