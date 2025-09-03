@@ -133,10 +133,12 @@ class EnhancedComparisonService:
             # Performance score
             if data.get('performance'):
                 perf = data['performance']
-                if perf.get('load_time', 999) < 2:
-                    score += 20
-                elif perf.get('load_time', 999) < 3:
-                    score += 10
+                load_time = perf.get('load_time')
+                if load_time and load_time < 100:  # Valid load time
+                    if load_time < 2:
+                        score += 20
+                    elif load_time < 3:
+                        score += 10
             
             # Conversion optimization score
             if data.get('conversion'):
@@ -256,19 +258,21 @@ class EnhancedComparisonService:
         
         # Performance opportunity
         load_times = {
-            domain: data.get('performance', {}).get('load_time', 999)
+            domain: data.get('performance', {}).get('load_time')
             for domain, data in analyses.items()
+            if data.get('performance', {}).get('load_time') and data.get('performance', {}).get('load_time') < 100
         }
-        slowest = max(load_times.values())
-        if slowest > 3:
-            opportunities.append({
-                'title': 'Performance Advantage',
-                'description': f'Competitors have {slowest:.1f}s load times',
-                'action': 'Achieve <2s load time for 20% conversion boost',
-                'impact': 'High',
-                'effort': 'Medium',
-                'timeline': '2 weeks'
-            })
+        if load_times:
+            slowest = max(load_times.values())
+            if slowest > 3:
+                opportunities.append({
+                    'title': 'Performance Advantage',
+                    'description': f'Competitors have {slowest:.1f}s load times',
+                    'action': 'Achieve <2s load time for 20% conversion boost',
+                    'impact': 'High',
+                    'effort': 'Medium',
+                    'timeline': '2 weeks'
+                })
         
         # Social proof opportunity
         testimonial_counts = {
@@ -446,7 +450,10 @@ class EnhancedComparisonService:
         for domain, data in analyses.items():
             perf = data.get('performance', {})
             load_time = perf.get('load_time', 'N/A')
-            response += f"- **{domain}:** {load_time:.1f}s load time" if isinstance(load_time, (int, float)) else f"- **{domain}:** {load_time}\n"
+            if isinstance(load_time, (int, float)) and load_time < 100:
+                response += f"- **{domain}:** {load_time:.1f}s load time\n"
+            else:
+                response += f"- **{domain}:** Unable to measure\n"
         response += "\n"
         
         # Conversion Elements

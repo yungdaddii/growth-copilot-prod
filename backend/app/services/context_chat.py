@@ -396,7 +396,18 @@ class ContextAwareChat:
                 if not snapshot:
                     # Do a full analysis for better data
                     try:
-                        analysis_result = await analyzer.analyze(domain)
+                        # Create a temporary conversation for analysis
+                        from app.models import Conversation
+                        from uuid import uuid4
+                        
+                        temp_conversation = Conversation(
+                            id=uuid4(),
+                            session_id=context.session_id
+                        )
+                        self.session.add(temp_conversation)
+                        await self.session.commit()
+                        
+                        analysis_result = await analyzer.analyze(domain, str(temp_conversation.id))
                         analyses[domain] = analysis_result
                         # Also capture snapshot for storage
                         snapshot = await self.monitor.capture_snapshot(domain)
