@@ -622,10 +622,12 @@ class ContextAwareChat:
                         response = f"# 💰 Revenue Leak Analysis: {domain}\n\n"
                         
                         # Performance issues
-                        if analysis.page_speed_score and analysis.page_speed_score < 50:
-                            response += f"## 🐌 Speed Issues (Score: {analysis.page_speed_score}/100)\n"
-                            response += f"- **Load time:** {analysis.load_time:.1f}s (53% of users leave after 3s)\n"
-                            response += f"- **Estimated revenue loss:** ${int(analysis.load_time * 1000)} per month\n"
+                        if analysis.performance_score and analysis.performance_score < 50:
+                            response += f"## 🐌 Speed Issues (Score: {analysis.performance_score}/100)\n"
+                            # Get load time from results if available
+                            load_time = analysis.results.get('performance', {}).get('load_time', 3.0) if analysis.results else 3.0
+                            response += f"- **Load time:** {load_time:.1f}s (53% of users leave after 3s)\n"
+                            response += f"- **Estimated revenue loss:** ${int(load_time * 1000)} per month\n"
                             response += f"- **Fix:** Optimize images, enable caching, use CDN\n\n"
                         
                         # Mobile issues
@@ -635,8 +637,9 @@ class ContextAwareChat:
                             response += f"- **Revenue impact:** Missing out on mobile conversions\n"
                             response += f"- **Fix:** Responsive design, touch-friendly buttons, simplified forms\n\n"
                         
-                        # Missing trust signals
-                        if not analysis.has_ssl:
+                        # Missing trust signals - check in results
+                        has_ssl = analysis.results.get('seo', {}).get('has_ssl', True) if analysis.results else True
+                        if not has_ssl:
                             response += "## 🔒 Security Warning\n"
                             response += "- **No SSL certificate** - 85% of users won't submit forms\n"
                             response += "- **Revenue loss:** Critical - blocks all transactions\n"
@@ -658,7 +661,7 @@ class ContextAwareChat:
                         
                         # Summary
                         total_score = (
-                            (analysis.page_speed_score or 50) + 
+                            (analysis.performance_score or 50) + 
                             (analysis.mobile_score or 50) + 
                             (analysis.seo_score or 50)
                         ) / 3
