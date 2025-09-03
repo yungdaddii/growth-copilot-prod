@@ -36,7 +36,12 @@ except ValueError:
         # Use JSON string from environment variable (for Railway)
         import json
         try:
-            cred_dict = json.loads(cred_json)
+            # Clean the JSON string - remove any control characters
+            import re
+            cred_json_clean = re.sub(r'[\x00-\x1f\x7f]', '', cred_json)
+            # Also handle escaped newlines in private key
+            cred_json_clean = cred_json_clean.replace('\\\\n', '\\n')
+            cred_dict = json.loads(cred_json_clean)
             cred = credentials.Certificate(cred_dict)
             # Explicitly set project ID
             firebase_admin.initialize_app(cred, {

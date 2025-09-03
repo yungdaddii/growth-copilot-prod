@@ -592,8 +592,19 @@ class ContextAwareChat:
                 if any(word in message.lower() for word in ['revenue', 'leak', 'opportunity', 'improve', 'optimize', 'analyze']):
                     logger.info(f"Performing revenue leak analysis for {domain}")
                     
-                    # Get or create analysis
-                    analysis = await analyzer.analyze(domain)
+                    # Get or create analysis (DomainAnalyzer needs conversation_id)
+                    # Create a temporary conversation for this analysis
+                    from app.models import Conversation
+                    from uuid import uuid4
+                    
+                    conversation = Conversation(
+                        id=uuid4(),
+                        session_id=context.session_id
+                    )
+                    self.session.add(conversation)
+                    await self.session.commit()
+                    
+                    analysis = await analyzer.analyze(domain, str(conversation.id))
                     
                     if analysis:
                         # Generate revenue-focused response

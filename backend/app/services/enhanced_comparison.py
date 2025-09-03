@@ -6,14 +6,11 @@ from datetime import datetime, timedelta
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.analyzers import (
-    PerformanceAnalyzer,
-    ConversionAnalyzer,
-    SEOAnalyzer,
-    TrafficAnalyzer,
-    SocialAnalyzer,
-    ContentStrategyAnalyzer,
-)
+from app.analyzers.performance import PerformanceAnalyzer
+from app.analyzers.conversion import ConversionAnalyzer
+from app.analyzers.seo import SEOAnalyzer
+from app.analyzers.social import SocialAnalyzer
+from app.analyzers.content_strategy import ContentStrategyAnalyzer
 from app.analyzers.revenue_intelligence import RevenueIntelligenceAnalyzer
 from app.analyzers.pricing_intelligence import PricingIntelligenceAnalyzer
 from app.analyzers.form_intelligence import FormIntelligenceAnalyzer
@@ -36,7 +33,6 @@ class EnhancedComparisonService:
             'performance': PerformanceAnalyzer(),
             'conversion': ConversionAnalyzer(),
             'seo': SEOAnalyzer(),
-            'traffic': TrafficAnalyzer(),
             'social': SocialAnalyzer(),
             'content': ContentStrategyAnalyzer(),
             'revenue': RevenueIntelligenceAnalyzer(),
