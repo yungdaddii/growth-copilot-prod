@@ -166,14 +166,43 @@ export default function LoginFormStyled({ onSuccess }: LoginFormProps) {
     setLoading(true);
 
     try {
+      console.log("Starting Google sign-in...");
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
+      console.log("Firebase Google sign-in successful");
+      
       const idToken = await userCredential.user.getIdToken();
-      await login(idToken);
-      onSuccess();
+      console.log("Got Firebase ID token, calling backend...");
+      
+      try {
+        await login(idToken);
+        console.log("Backend login successful");
+        onSuccess();
+      } catch (backendError: any) {
+        console.error("Backend login failed:", backendError);
+        // More detailed error for backend issues
+        if (backendError.message) {
+          setError(`Backend authentication failed: ${backendError.message}`);
+        } else {
+          setError("Failed to authenticate with backend server. Please try again.");
+        }
+        // Sign out from Firebase since backend auth failed
+        await auth.signOut();
+      }
     } catch (err: any) {
-      console.error("Google sign-in error:", err);
-      setError("Failed to sign in with Google");
+      console.error("Google sign-in error details:", {
+        code: err.code,
+        message: err.message,
+        fullError: err
+      });
+      
+      if (err.code === "auth/popup-closed-by-user") {
+        setError("Sign-in cancelled");
+      } else if (err.code === "auth/popup-blocked") {
+        setError("Popup was blocked. Please allow popups for this site");
+      } else {
+        setError(`Google sign-in failed: ${err.message || "Unknown error"}`);
+      }
     } finally {
       setLoading(false);
     }

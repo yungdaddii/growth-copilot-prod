@@ -65,3 +65,8 @@ coverage/
 # Misc
 .DS_Store
 Thumbs.db
+# Firebase service account (NEVER COMMIT!)
+firebase-service-account.json
+*-service-account.json
+.env.backend
+.env.docker

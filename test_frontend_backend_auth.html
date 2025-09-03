@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend-Backend Auth</title>
+</head>
+<body>
+    <h1>Testing Keelo.ai Authentication Flow</h1>
+    <p>Open the browser console to see the test results</p>
+    
+    <script>
+        async function testAuth() {
+            console.log("Testing authentication flow...");
+            
+            // Test 1: Check if backend is accessible
+            console.log("\n1. Testing backend accessibility:");
+            try {
+                const healthResponse = await fetch("https://growth-copilot-prod-production.up.railway.app/health");
+                const healthData = await healthResponse.json();
+                console.log("✅ Backend is accessible:", healthData);
+            } catch (error) {
+                console.error("❌ Cannot reach backend:", error);
+            }
+            
+            // Test 2: Check Firebase health
+            console.log("\n2. Testing Firebase configuration:");
+            try {
+                const firebaseResponse = await fetch("https://growth-copilot-prod-production.up.railway.app/health/firebase");
+                const firebaseData = await firebaseResponse.json();
+                console.log("Firebase status:", firebaseData);
+                
+                if (firebaseData.status === "operational") {
+                    console.log("✅ Firebase is properly configured!");
+                } else if (firebaseData.status === "degraded") {
+                    console.log("⚠️ Firebase is degraded - auth may not work");
+                } else {
+                    console.log("❌ Firebase configuration issue");
+                }
+            } catch (error) {
+                console.error("❌ Firebase health check failed:", error);
+            }
+            
+            // Test 3: Test auth endpoint with invalid token
+            console.log("\n3. Testing auth endpoint:");
+            try {
+                const authResponse = await fetch("https://growth-copilot-prod-production.up.railway.app/api/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        id_token: "test_invalid_token"
+                    })
+                });
+                
+                if (authResponse.status === 401) {
+                    console.log("✅ Auth endpoint is working (correctly rejected invalid token)");
+                } else if (authResponse.status === 503) {
+                    console.log("❌ Auth service not configured (Firebase Admin SDK missing)");
+                } else {
+                    console.log("⚠️ Unexpected response:", authResponse.status);
+                }
+                
+                const authData = await authResponse.json();
+                console.log("Auth response:", authData);
+            } catch (error) {
+                console.error("❌ Auth endpoint test failed:", error);
+            }
+            
+            // Test 4: Check CORS
+            console.log("\n4. Testing CORS configuration:");
+            console.log("Current origin:", window.location.origin);
+            console.log("If you see CORS errors above, the backend needs to allow this origin");
+        }
+        
+        // Run the test
+        testAuth();
+    </script>
+</body>
+</html>

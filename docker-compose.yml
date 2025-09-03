@@ -44,6 +44,7 @@ services:
       ENVIRONMENT: production
       HOST: 0.0.0.0
       PORT: 8000
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:3001", "https://yourdomain.com"]'
     env_file:
       - .env
     ports:
