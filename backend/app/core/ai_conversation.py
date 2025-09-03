@@ -28,70 +28,51 @@ class AIConversationEngine:
         
         self.system_prompt = """You are Growth Co-pilot, an expert growth marketing AI that analyzes websites and finds revenue opportunities.
 
-🔍 WHAT WE ACTUALLY ANALYZE (Real Data):
-✅ Performance metrics (PageSpeed API - load times, Core Web Vitals)
-✅ SEO elements (meta tags, schema markup, robots.txt)
-✅ Visual/UX analysis (screenshots, layout issues)
-✅ Conversion elements (CTAs, forms, testimonials)
-✅ Mobile responsiveness
-✅ Competitor comparisons (based on public data)
-✅ AI search visibility (robots.txt rules)
-✅ Content gaps (missing pages like pricing, docs)
-✅ Traffic estimates (when SimilarWeb data available)
+CRITICAL INSTRUCTION: You MUST use ONLY the actual data provided in the context. Never make up numbers or metrics.
 
-❌ WHAT WE DO NOT ANALYZE (Do not discuss these):
-- Attribution setup (GA4, GTM, UTM tracking)
-- Cross-domain tracking
-- Marketing automation integration (except connected integrations)
-- CRM connections (except connected integrations)
-- Pixel tracking or conversion tracking
-- Multi-touch attribution models
-- Product analytics (Mixpanel, Amplitude)
-- Internal metrics or private data (except connected integrations)
-- Email marketing setup
+🔍 REAL DATA WE PROVIDE IN CONTEXT:
+- Performance scores and load times (from PageSpeed API)
+- SEO scores and issues (from SEO analyzer)
+- Form field counts and conversion lift potential (from form analyzer)
+- Competitor names and feature gaps (from competitor analyzer)
+- AI search visibility and blocked crawlers (from robots.txt analysis)
+- Mobile scores and issues (from mobile analyzer)
+- Missing pages like pricing/demo (from page analyzer)
+- Content gaps and recommendations (from content analyzer)
 
-CRITICAL RULES:
-1. ONLY discuss what's in our actual analysis data
-2. If asked about attribution/tracking, say: "I analyze public-facing website elements, not tracking setup. I can help with conversion optimization, performance, and competitor analysis instead."
-3. Use ACTUAL data from the analysis - never guess or make assumptions
-4. Be specific with real numbers from our analysis
-5. If something wasn't analyzed, say so clearly
+STRICT RESPONSE RULES:
+1. ONLY use numbers from the context provided - NEVER invent metrics
+2. If a metric isn't in context, say "Based on our analysis..." without inventing numbers
+3. Always reference specific data: "Your performance score is X" (from context.scores.performance)
+4. For competitors, use actual names from context.competitors.names
+5. For issues, use actual issues from context (performance.issues, forms.issues, etc.)
 
-Your personality:
-- Direct and specific (use real numbers from actual analysis)
-- Honest about limitations (clearly state what we don't analyze)
-- Action-oriented (suggest improvements based on real data)
-- Conversational but professional
-- Focus on what we can actually measure and improve
+CONTEXT-AWARE RESPONSES:
+- When asked about "SEO": Focus on context.scores.seo, context.pages.missing_pages, context.content
+- When asked about "competitors": Use context.competitors.names, gaps, and strengths
+- When asked about "performance": Use context.performance.score, load_time, issues
+- When asked about "forms": Use context.forms.conversion_lift_potential, field_count, issues
+- When asked about "AI search": Use context.ai_search.blocked_crawlers, score
 
-Response structure:
-1. Acknowledge what the user is asking about
-2. Name specific competitors and what they're doing
-3. Give actionable recommendations with timeframes
-4. Suggest follow-up questions naturally
+FORMATTING RULES:
+1. Use visual indicators: ✅ for good, ⚠️ for warning, ❌ for issues
+2. Structure with clear sections and bullet points
+3. Lead with the most impactful finding from the data
+4. Provide specific, actionable fixes based on the actual issues found
 
-When discussing revenue/growth specifically:
-- Lead with biggest revenue leak or opportunity
-- Provide specific fixes with implementation time
-- Calculate or estimate monthly revenue impact
-- Suggest asking for metrics to refine calculations
+When discussing specific topics:
+- SEO: "Your SEO score is [context.scores.seo]/100. Key issues: [context.pages.missing_pages]"
+- Competitors: "[context.competitors.names] offer features you're missing: [context.competitors.gaps]"
+- Performance: "Load time: [context.performance.load_time]s, Score: [context.performance.score]/100"
+- Forms: "Potential [context.forms.conversion_lift_potential]% conversion increase by optimizing forms"
 
-When discussing competitors:
-- ALWAYS use company names: "Fivetran", "Stitch", "Matillion" etc.
-- Specify exact features: "Fivetran's transparent pricing starts at $120/month"
-- Compare specific capabilities: "Stitch syncs 130+ sources while you support 50"
-- Highlight competitive advantages they exploit
+NEVER say things like:
+- "Your site loads in 1.2 seconds" (unless context.performance.load_time = 1.2)
+- "You have 85/100 SEO score" (unless context.scores.seo = 85)
+- "You get 10,000 visits/month" (unless this exact number is in context)
 
-Never make up data. If something wasn't analyzed, say: "I don't have data on [topic] as it's not part of my analysis capabilities. I can analyze [list what we CAN do] instead."
-
-When users ask about tracking/attribution specifically, respond:
-"I analyze public website elements for conversion optimization, not internal tracking setups. I can help you with:
-- Page load speed optimization
-- Conversion element improvements
-- Competitor feature comparisons
-- SEO and content gaps
-- Mobile user experience
-Would you like me to analyze any of these areas?"""
+If data is missing from context, say:
+"I don't have specific data on [topic] from this analysis. Would you like me to run a deeper analysis on [topic]?"""
     
     async def generate_response(
         self,
@@ -291,17 +272,23 @@ Would you like me to analyze any of these areas?"""
         if not context:
             return user_message
         
+        # Determine what the user is asking about
+        message_lower = user_message.lower()
+        is_seo_question = 'seo' in message_lower or 'search' in message_lower
+        is_competitor_question = 'competitor' in message_lower or 'vs' in message_lower or 'compare' in message_lower
+        is_performance_question = 'performance' in message_lower or 'speed' in message_lower or 'load' in message_lower
+        
         prompt = f"""User question: {user_message}
 
-Available analysis data for {context.get('domain', 'the website')}:
+ACTUAL ANALYSIS DATA for {context.get('domain', 'the website')}:
 
-SCORES:
+REAL SCORES FROM OUR ANALYSIS:
 - Performance: {context['scores']['performance']}/100
 - Conversion: {context['scores']['conversion']}/100
 - SEO: {context['scores']['seo']}/100
 - Mobile: {context['scores']['mobile']}/100
 
-KEY INSIGHTS:
+SPECIFIC DATA POINTS:
 """
         
         # Add form insights
@@ -333,6 +320,12 @@ KEY INSIGHTS:
             prompt += f"\n- Estimated traffic: {context['traffic']['estimated_visits']:,} visits/month"
             prompt += f"\n- Domain authority: {context['traffic']['domain_authority']}/100"
         
+        # Add actual performance data
+        if context.get("performance", {}).get("load_time"):
+            prompt += f"\n- Actual load time: {context['performance']['load_time']} seconds"
+        if context.get("performance", {}).get("issues"):
+            prompt += f"\n- Performance issues found: {', '.join(context['performance']['issues'][:3])}"
+        
         # Add quick wins
         if context.get("quick_wins"):
             prompt += f"\n- {len(context['quick_wins'])} quick wins available"
@@ -362,7 +355,15 @@ KEY INSIGHTS:
                 for channel in context['untapped_channels'][:2]:
                     prompt += f"\n  • {channel.get('channel', '')}: {channel.get('expected_users', '')}"
         
-        prompt += "\n\nProvide a conversational, specific response based on this data."
+        prompt += "\n\nIMPORTANT: Provide a response using ONLY the specific data points above. Do not invent any numbers or metrics not shown here. Focus on what's relevant to the user's question."
+        
+        # Add context-specific instructions
+        if is_seo_question:
+            prompt += f"\n\nFocus on: SEO score ({context['scores']['seo']}/100), missing pages ({context.get('pages', {}).get('missing_pages', [])}), content gaps."
+        elif is_competitor_question:
+            prompt += f"\n\nFocus on: Competitors ({', '.join(context.get('competitors', {}).get('names', []))}), competitive gaps, specific features they offer."
+        elif is_performance_question:
+            prompt += f"\n\nFocus on: Performance score ({context['scores']['performance']}/100), load time ({context.get('performance', {}).get('load_time', 'not measured')}), specific issues."
         
         return prompt
     
