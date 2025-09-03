@@ -20,6 +20,13 @@ except Exception as e:
     logger = structlog.get_logger()
     logger.warning(f"Auth module not available (migration may be needed): {e}")
     AUTH_AVAILABLE = False
+
+# Import debug endpoint
+try:
+    from app.api import debug_firebase
+    DEBUG_AVAILABLE = True
+except:
+    DEBUG_AVAILABLE = False
 from app.utils.cache import init_redis
 from app.integrations.google_ads import google_ads_router
 
@@ -115,6 +122,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router)  # Health check routes
 if AUTH_AVAILABLE:
     app.include_router(auth.router)  # Auth routes at /api/auth
+if DEBUG_AVAILABLE:
+    app.include_router(debug_firebase.router)  # Debug routes
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 app.include_router(test_ws.router, prefix="/ws", tags=["test"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
