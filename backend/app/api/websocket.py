@@ -205,7 +205,7 @@ async def websocket_endpoint(
                         context_response = await context_chat.process_message(payload.content, session_id)
                         
                         # If context handler has a specific response, send it
-                        if context_response.get('type') in ['competitor_update', 'progress_report', 'opportunities', 'comparison', 'prediction', 'monitoring_added']:
+                        if context_response.get('type') in ['competitor_update', 'progress_report', 'opportunities', 'comparison', 'prediction', 'monitoring_added', 'analysis', 'info', 'error']:
                             await manager.send_message(
                                 client_id,
                                 WebSocketMessage(

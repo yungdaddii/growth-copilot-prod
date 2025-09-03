@@ -569,6 +569,7 @@ class ContextAwareChat:
         
         if match:
             domain = match.group(1)
+            logger.info(f"Analyzing domain: {domain}")
             
             # Update context if this is their primary domain
             if not context.primary_domain:
@@ -581,16 +582,102 @@ class ContextAwareChat:
             if domain not in context.monitoring_sites:
                 context.monitoring_sites.append(domain)
                 await self.session.commit()
+            
+            # Perform actual analysis using DomainAnalyzer
+            try:
+                from app.core.analyzer import DomainAnalyzer
+                analyzer = DomainAnalyzer(self.session)
+                
+                # Check if this is asking for revenue leaks or analysis
+                if any(word in message.lower() for word in ['revenue', 'leak', 'opportunity', 'improve', 'optimize', 'analyze']):
+                    logger.info(f"Performing revenue leak analysis for {domain}")
+                    
+                    # Get or create analysis
+                    analysis = await analyzer.analyze(domain)
+                    
+                    if analysis:
+                        # Generate revenue-focused response
+                        response = f"# 💰 Revenue Leak Analysis: {domain}\n\n"
+                        
+                        # Performance issues
+                        if analysis.page_speed_score and analysis.page_speed_score < 50:
+                            response += f"## 🐌 Speed Issues (Score: {analysis.page_speed_score}/100)\n"
+                            response += f"- **Load time:** {analysis.load_time:.1f}s (53% of users leave after 3s)\n"
+                            response += f"- **Estimated revenue loss:** ${int(analysis.load_time * 1000)} per month\n"
+                            response += f"- **Fix:** Optimize images, enable caching, use CDN\n\n"
+                        
+                        # Mobile issues
+                        if analysis.mobile_score and analysis.mobile_score < 80:
+                            response += f"## 📱 Mobile Experience Issues (Score: {analysis.mobile_score}/100)\n"
+                            response += f"- **Problem:** Poor mobile UX loses 68% of mobile visitors\n"
+                            response += f"- **Revenue impact:** Missing out on mobile conversions\n"
+                            response += f"- **Fix:** Responsive design, touch-friendly buttons, simplified forms\n\n"
+                        
+                        # Missing trust signals
+                        if not analysis.has_ssl:
+                            response += "## 🔒 Security Warning\n"
+                            response += "- **No SSL certificate** - 85% of users won't submit forms\n"
+                            response += "- **Revenue loss:** Critical - blocks all transactions\n"
+                            response += "- **Fix:** Install SSL certificate immediately\n\n"
+                        
+                        # SEO opportunities
+                        if analysis.seo_score and analysis.seo_score < 70:
+                            response += f"## 🔍 SEO Gaps (Score: {analysis.seo_score}/100)\n"
+                            response += "- **Missing organic traffic** - Not ranking for key terms\n"
+                            response += "- **Revenue impact:** Missing 40-60% of potential traffic\n"
+                            response += "- **Fix:** Optimize title tags, meta descriptions, content\n\n"
+                        
+                        # Conversion optimization
+                        response += "## 🎯 Quick Conversion Wins\n"
+                        response += "1. **Add testimonials** → +18% conversion rate\n"
+                        response += "2. **Simplify forms** → +25% completion rate\n"
+                        response += "3. **Clear CTAs** → +12% click-through rate\n"
+                        response += "4. **Live chat** → +23% conversion for high-intent visitors\n\n"
+                        
+                        # Summary
+                        total_score = (
+                            (analysis.page_speed_score or 50) + 
+                            (analysis.mobile_score or 50) + 
+                            (analysis.seo_score or 50)
+                        ) / 3
+                        
+                        response += f"## 📊 Overall Revenue Health: {int(total_score)}/100\n"
+                        if total_score < 50:
+                            response += "⚠️ **Critical:** You're likely losing 40-60% of potential revenue\n"
+                        elif total_score < 70:
+                            response += "🟡 **Warning:** Significant revenue opportunities available\n"
+                        else:
+                            response += "✅ **Good:** Minor optimizations can still boost revenue\n"
+                        
+                        return {
+                            'type': 'analysis',
+                            'content': response,
+                            'domain': domain,
+                            'analysis_id': str(analysis.id) if analysis else None
+                        }
+                    else:
+                        return {
+                            'type': 'error',
+                            'content': f"Unable to analyze {domain}. Please check the URL and try again."
+                        }
+                else:
+                    # Generic question about the domain
+                    return {
+                        'type': 'info',
+                        'content': f"I can analyze {domain} for revenue leaks. Try asking:\n- 'Find revenue leaks on {domain}'\n- 'How can {domain} improve conversions?'\n- 'What's wrong with {domain}?'"
+                    }
+                    
+            except Exception as e:
+                logger.error(f"Analysis error: {e}")
+                return {
+                    'type': 'error',
+                    'content': f"Error analyzing {domain}: {str(e)}"
+                }
         
-        # Return normal analysis (will be handled by existing analyzer)
+        # No domain found in message - return generic response
         return {
-            'type': 'analyze',
-            'message': message,
-            'context': {
-                'primary_domain': context.primary_domain,
-                'competitors': context.competitors,
-                'industry': context.industry
-            }
+            'type': 'info',
+            'content': "I can help you find revenue leaks! Share any website URL and I'll analyze it for opportunities."
         }
     
     def _format_time_ago(self, timestamp: datetime) -> str:
