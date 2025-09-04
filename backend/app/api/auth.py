@@ -2,7 +2,8 @@
 
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import logging
 
 from app.database import get_db
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 @router.post("/login", response_model=UserResponse)
 async def login(
     request: LoginRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Login with Firebase ID token.
@@ -65,7 +66,10 @@ async def login(
                 detail="Invalid token data"
             )
         
-        user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+        result = await db.execute(
+            select(User).where(User.firebase_uid == firebase_uid)
+        )
+        user = result.scalar_one_or_none()
         
         if not user:
             # Create new user
@@ -95,15 +99,15 @@ async def login(
                 last_login_at=datetime.utcnow()
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
             logger.info(f"Created new user: {email} with company: {request.company_name}")
         else:
             # Update last login
             from datetime import datetime
             user.last_login_at = datetime.utcnow()
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
         
         return user
         
@@ -129,7 +133,7 @@ async def get_me(
 async def update_me(
     update_data: UserUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Update current user profile."""
     updated_user = await AuthService.update_user_profile(
@@ -164,7 +168,7 @@ async def logout(
 @router.delete("/me")
 async def delete_account(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Delete current user account.
@@ -177,7 +181,7 @@ async def delete_account(
         # Soft delete the user
         current_user.is_active = False
         current_user.deleted_at = datetime.utcnow()
-        db.commit()
+        await db.commit()
         
         # Revoke all tokens
         await FirebaseAuth.revoke_refresh_tokens(current_user.firebase_uid)
@@ -212,7 +216,7 @@ async def get_subscription(
 async def update_subscription(
     update_data: SubscriptionUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Update user subscription (admin only).
@@ -237,8 +241,8 @@ async def update_subscription(
     
     if update_data.trial_ends_at:
         updated_user.trial_ends_at = update_data.trial_ends_at
-        db.commit()
-        db.refresh(updated_user)
+        await db.commit()
+        await db.refresh(updated_user)
     
     return updated_user
 
@@ -246,7 +250,7 @@ async def update_subscription(
 @router.get("/check-rate-limit")
 async def check_rate_limit(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Check if user has exceeded their rate limit."""
     can_analyze = await AuthService.check_rate_limit(current_user, db)

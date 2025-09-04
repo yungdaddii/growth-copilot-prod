@@ -7,7 +7,8 @@ import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import logging
 
 from app.database import get_db
@@ -136,7 +137,7 @@ class FirebaseAuth:
     @staticmethod
     async def get_current_user(
         credentials: HTTPAuthorizationCredentials = Depends(security),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
     ) -> User:
         """Get current user from database or create if not exists."""
         # First verify the token
@@ -152,7 +153,10 @@ class FirebaseAuth:
             )
         
         # Get or create user
-        user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+        result = await db.execute(
+            select(User).where(User.firebase_uid == firebase_uid)
+        )
+        user = result.scalar_one_or_none()
         
         if not user:
             # Create new user
@@ -177,20 +181,20 @@ class FirebaseAuth:
                 last_login_at=datetime.utcnow()
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
             logger.info(f"Created new user: {email}")
         else:
             # Update last login
             user.last_login_at = datetime.utcnow()
-            db.commit()
+            await db.commit()
         
         return user
     
     @staticmethod
     async def get_optional_user(
         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
     ) -> Optional[User]:
         """Get current user if authenticated, otherwise return None."""
         if not credentials:
@@ -295,7 +299,7 @@ class AuthService:
     async def update_user_profile(
         user: User,
         profile_data: Dict[str, Any],
-        db: Session
+        db: AsyncSession
     ) -> User:
         """Update user profile information."""
         updateable_fields = [
@@ -309,8 +313,8 @@ class AuthService:
                 setattr(user, field, profile_data[field])
         
         user.updated_at = datetime.utcnow()
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
         
         return user
     
@@ -320,7 +324,7 @@ class AuthService:
         tier: SubscriptionTier,
         status: SubscriptionStatus,
         stripe_data: Optional[Dict[str, Any]],
-        db: Session
+        db: AsyncSession
     ) -> User:
         """Update user subscription information."""
         user.subscription_tier = tier
@@ -349,8 +353,8 @@ class AuthService:
             user.can_use_api = True
         
         user.updated_at = datetime.utcnow()
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
         
         return user
     

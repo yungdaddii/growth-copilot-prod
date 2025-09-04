@@ -11,15 +11,8 @@ from app.config import settings
 from app.database import engine, Base
 from app.api import websocket, analysis, share, test_ws, test_conversation, test_enhanced, health
 
-# Import auth module safely (in case User table doesn't exist yet)
-try:
-    from app.api import auth
-    AUTH_AVAILABLE = True
-except Exception as e:
-    import structlog
-    logger = structlog.get_logger()
-    logger.warning(f"Auth module not available (migration may be needed): {e}")
-    AUTH_AVAILABLE = False
+# Import auth module
+from app.api import auth
 from app.utils.cache import init_redis
 from app.integrations.google_ads import google_ads_router
 
@@ -113,8 +106,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(health.router)  # Health check routes
-if AUTH_AVAILABLE:
-    app.include_router(auth.router)  # Auth routes at /api/auth
+app.include_router(auth.router)  # Auth routes at /api/auth
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 app.include_router(test_ws.router, prefix="/ws", tags=["test"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
