@@ -359,7 +359,7 @@ class AuthService:
         return user
     
     @staticmethod
-    async def check_rate_limit(user: User, db: Session) -> bool:
+    async def check_rate_limit(user: User, db: AsyncSession) -> bool:
         """Check if user has exceeded their rate limit."""
         if user.subscription_tier == SubscriptionTier.ENTERPRISE:
             return True  # No limits for enterprise
@@ -370,8 +370,8 @@ class AuthService:
         return True
     
     @staticmethod
-    async def increment_usage(user: User, db: Session) -> None:
+    async def increment_usage(user: User, db: AsyncSession) -> None:
         """Increment user's usage counter."""
         user.monthly_analyses_used += 1
         user.last_active_at = datetime.utcnow()
-        db.commit()
+        await db.commit()
