@@ -16,6 +16,15 @@ from app.analyzers import (
     SEOAnalyzer,
     MobileAnalyzer
 )
+
+# Import enhanced analyzers if available
+try:
+    from app.analyzers.enhanced_seo import EnhancedSEOAnalyzer
+    from app.analyzers.enhanced_performance import EnhancedPerformanceAnalyzer
+    from app.analyzers.enhanced_conversion import EnhancedConversionAnalyzer
+    ENHANCED_ANALYZERS_AVAILABLE = True
+except ImportError:
+    ENHANCED_ANALYZERS_AVAILABLE = False
 from app.analyzers.revenue_intelligence import RevenueIntelligenceAnalyzer
 from app.analyzers.growth_opportunities import GrowthOpportunitiesAnalyzer
 from app.analyzers.browser_analyzer import BrowserAnalyzer
@@ -45,10 +54,19 @@ logger = structlog.get_logger()
 class DomainAnalyzer:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.performance_analyzer = PerformanceAnalyzer()
-        self.conversion_analyzer = ConversionAnalyzer()
+        
+        # Use enhanced analyzers if available, otherwise fall back to standard
+        if ENHANCED_ANALYZERS_AVAILABLE:
+            logger.info("Using enhanced analyzers for deeper insights")
+            self.seo_analyzer = EnhancedSEOAnalyzer()
+            self.performance_analyzer = EnhancedPerformanceAnalyzer()
+            self.conversion_analyzer = EnhancedConversionAnalyzer()
+        else:
+            self.seo_analyzer = SEOAnalyzer()
+            self.performance_analyzer = PerformanceAnalyzer()
+            self.conversion_analyzer = ConversionAnalyzer()
+        
         self.competitor_analyzer = CompetitorAnalyzer()
-        self.seo_analyzer = SEOAnalyzer()
         self.mobile_analyzer = MobileAnalyzer()
         self.traffic_analyzer = TrafficAnalyzer()
         self.social_analyzer = SocialAnalyzer()
