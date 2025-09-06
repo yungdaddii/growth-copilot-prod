@@ -117,12 +117,26 @@ export function useWebSocket({
   }, [user])
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
+    console.log('sendMessage called:', {
+      message,
+      wsRef: wsRef.current,
+      readyState: wsRef.current?.readyState,
+      readyStateString: wsRef.current ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][wsRef.current.readyState] : 'NO_SOCKET'
+    })
+    
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message))
+      const messageString = JSON.stringify(message)
+      console.log('Sending WebSocket message:', messageString)
+      wsRef.current.send(messageString)
+      console.log('Message sent successfully')
     } else {
-      console.warn('WebSocket is not connected')
+      console.error('WebSocket is not connected:', {
+        readyState: wsRef.current?.readyState,
+        readyStateString: wsRef.current ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][wsRef.current.readyState] : 'NO_SOCKET',
+        connectionStatus
+      })
     }
-  }, [])
+  }, [connectionStatus])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

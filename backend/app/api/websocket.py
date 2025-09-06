@@ -132,10 +132,20 @@ async def websocket_endpoint(
         )
         logger.info(f"Connection confirmation sent to {client_id}")
         
+        # Add a counter to track loop iterations
+        loop_count = 0
+        logger.info(f"🔄 Entering message receive loop for {client_id}")
+        
         while True:
+            loop_count += 1
             # Receive message from client
-            data = await websocket.receive_text()
-            logger.info(f"📨 Received WebSocket message from {client_id}: {data[:100]}...")
+            logger.info(f"⏳ Waiting for message #{loop_count} from {client_id}...")
+            try:
+                data = await websocket.receive_text()
+                logger.info(f"📨 Received WebSocket message #{loop_count} from {client_id}: {data[:100]}...")
+            except Exception as e:
+                logger.error(f"❌ Error receiving message #{loop_count} from {client_id}: {e}")
+                raise
             
             try:
                 message_data = json.loads(data)
