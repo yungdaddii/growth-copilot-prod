@@ -25,6 +25,13 @@ try:
     ENHANCED_ANALYZERS_AVAILABLE = True
 except ImportError:
     ENHANCED_ANALYZERS_AVAILABLE = False
+
+# Import the new enhanced SEO analyzer
+try:
+    from app.analyzers.enhanced_seo_analyzer import EnhancedSEOAnalyzer as AdvancedSEOAnalyzer
+    ADVANCED_SEO_AVAILABLE = True
+except ImportError:
+    ADVANCED_SEO_AVAILABLE = False
 from app.analyzers.revenue_intelligence import RevenueIntelligenceAnalyzer
 from app.analyzers.growth_opportunities import GrowthOpportunitiesAnalyzer
 from app.analyzers.browser_analyzer import BrowserAnalyzer
@@ -56,13 +63,19 @@ class DomainAnalyzer:
         self.db = db
         
         # Use enhanced analyzers if available, otherwise fall back to standard
-        if ENHANCED_ANALYZERS_AVAILABLE:
+        if ADVANCED_SEO_AVAILABLE:
+            logger.info("Using advanced SEO analyzer with content recommendations")
+            self.seo_analyzer = AdvancedSEOAnalyzer()
+        elif ENHANCED_ANALYZERS_AVAILABLE:
             logger.info("Using enhanced analyzers for deeper insights")
             self.seo_analyzer = EnhancedSEOAnalyzer()
+        else:
+            self.seo_analyzer = SEOAnalyzer()
+            
+        if ENHANCED_ANALYZERS_AVAILABLE:
             self.performance_analyzer = EnhancedPerformanceAnalyzer()
             self.conversion_analyzer = EnhancedConversionAnalyzer()
         else:
-            self.seo_analyzer = SEOAnalyzer()
             self.performance_analyzer = PerformanceAnalyzer()
             self.conversion_analyzer = ConversionAnalyzer()
         
@@ -374,6 +387,26 @@ class DomainAnalyzer:
             except Exception as e:
                 logger.error(f"Content strategy analysis failed", error=str(e))
                 combined["content_strategy"] = {}
+            
+            # Re-run advanced SEO analysis with competitor data if available
+            if ADVANCED_SEO_AVAILABLE and competitor_domains:
+                try:
+                    enhanced_seo = await self.seo_analyzer.analyze(domain, competitor_domains)
+                    # Merge with initial SEO results, prioritizing enhanced data
+                    if combined.get("seo"):
+                        # Keep basic SEO data but add enhanced insights
+                        combined["seo"]["keyword_opportunities"] = enhanced_seo.get("keyword_opportunities", [])
+                        combined["seo"]["content_gaps"] = enhanced_seo.get("content_gaps", [])
+                        combined["seo"]["content_recommendations"] = enhanced_seo.get("content_recommendations", [])
+                        combined["seo"]["competitor_content_analysis"] = enhanced_seo.get("competitor_content_analysis", {})
+                        combined["seo"]["topical_authority_gaps"] = enhanced_seo.get("topical_authority_gaps", [])
+                        combined["seo"]["quick_wins"] = enhanced_seo.get("quick_wins", [])
+                        combined["seo"]["long_term_strategy"] = enhanced_seo.get("long_term_strategy", [])
+                        combined["seo"]["estimated_traffic_potential"] = enhanced_seo.get("estimated_traffic_potential", 0)
+                    else:
+                        combined["seo"] = enhanced_seo
+                except Exception as e:
+                    logger.error(f"Enhanced SEO analysis failed", error=str(e))
             
             # Re-run growth opportunities with competitor data
             try:

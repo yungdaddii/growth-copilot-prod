@@ -195,6 +195,48 @@ Current conversation context:
                     "referral": sources.get("referral", 0)
                 }
         
+        # Enhanced SEO specifics
+        if "seo" in results:
+            seo = results["seo"]
+            
+            # Extract keyword opportunities
+            if seo.get("keyword_opportunities"):
+                top_keywords = seo["keyword_opportunities"][:5]
+                specific["keyword_opportunities"] = [
+                    {
+                        "keyword": kw.get("keyword"),
+                        "traffic": kw.get("estimated_traffic"),
+                        "content_type": kw.get("content_type"),
+                        "title": kw.get("title_suggestion")
+                    }
+                    for kw in top_keywords
+                ]
+            
+            # Extract content recommendations
+            if seo.get("content_recommendations"):
+                top_content = seo["content_recommendations"][:3]
+                specific["content_to_create"] = [
+                    {
+                        "title": rec.get("title"),
+                        "type": rec.get("type"),
+                        "traffic_potential": rec.get("estimated_monthly_traffic"),
+                        "word_count": rec.get("word_count")
+                    }
+                    for rec in top_content
+                ]
+            
+            # Extract content gaps
+            if seo.get("content_gaps"):
+                critical_gaps = [gap for gap in seo["content_gaps"] if gap.get("priority") == "critical"]
+                specific["missing_pages"] = [
+                    {
+                        "page_type": gap.get("page_type"),
+                        "impact": gap.get("impact"),
+                        "traffic": gap.get("estimated_traffic")
+                    }
+                    for gap in critical_gaps[:3]
+                ]
+        
         # AI/SEO specifics
         if "ai_search" in results:
             ai = results["ai_search"]

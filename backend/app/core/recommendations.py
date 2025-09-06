@@ -24,6 +24,47 @@ class RecommendationEngine:
         form_intelligence = analysis_results.get("form_intelligence", {})
         content_strategy = analysis_results.get("content_strategy", {})
         
+        # Add enhanced SEO recommendations if available
+        if seo.get("content_recommendations"):
+            # Add top content recommendations
+            for rec in seo["content_recommendations"][:3]:
+                recommendations.append({
+                    "priority": "critical",
+                    "category": "content_creation",
+                    "issue": f"Missing high-value content: {rec.get('type', 'content')}",
+                    "impact": f"{rec.get('estimated_monthly_traffic', 0)} monthly visitors potential",
+                    "action": f"Create: {rec.get('title', 'Content piece')}",
+                    "effort": rec.get('estimated_time_to_write', '1 day'),
+                    "sales_opportunity": f"Capture {rec.get('conversion_potential', 'medium')} intent traffic"
+                })
+        
+        if seo.get("keyword_opportunities"):
+            # Add top keyword opportunities
+            for opp in seo["keyword_opportunities"][:2]:
+                recommendations.append({
+                    "priority": opp.get("priority", "medium"),
+                    "category": "seo_keywords",
+                    "issue": f"Not ranking for: '{opp.get('keyword', '')}'",
+                    "impact": f"{opp.get('estimated_traffic', 0)} monthly searches",
+                    "action": f"Create {opp.get('content_type', 'page')}: {opp.get('title_suggestion', '')}",
+                    "effort": "2-3 hours",
+                    "sales_opportunity": f"{opp.get('intent', 'informational')} intent traffic"
+                })
+        
+        if seo.get("content_gaps"):
+            # Add critical content gaps
+            for gap in seo["content_gaps"][:2]:
+                if gap.get("priority") == "critical":
+                    recommendations.append({
+                        "priority": "critical",
+                        "category": "content_gaps",
+                        "issue": f"Missing essential page: {gap.get('page_type', '')}",
+                        "impact": gap.get("impact", ""),
+                        "action": gap.get("implementation", ""),
+                        "effort": "1-2 days",
+                        "sales_opportunity": f"{gap.get('estimated_traffic', 0)} monthly visitors"
+                    })
+        
         # CONVERSION RECOMMENDATIONS
         if conv:
             # Form optimization
